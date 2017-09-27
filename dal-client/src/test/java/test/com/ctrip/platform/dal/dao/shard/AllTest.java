@@ -7,6 +7,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
 	ShardColModShardStrategyTest.class,
+	SimpleShardHintStrategyTest.class,
 	
 	DalTabelDaoShardByTableSqlSvrTest.class,
 	DalTabelDaoShardByTableMySqlTest.class,
