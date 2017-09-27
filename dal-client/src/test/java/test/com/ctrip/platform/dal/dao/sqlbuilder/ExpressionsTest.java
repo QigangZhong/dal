@@ -1,6 +1,5 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
 import static org.junit.Assert.assertEquals;
 
@@ -62,7 +61,7 @@ public class ExpressionsTest {
     
     @Test
     public void testBracket() throws SQLException {
-        Clause test = bracket(expression(template));
+        Clause test = bracket(AbstractFreeSqlBuilder.expression(template));
         setEnv(test);
 
         assertEquals("("+template+")", test.build());
