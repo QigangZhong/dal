@@ -96,11 +96,12 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
     abstract public String calculateDbShard(Object value);
     
     /**
-     * Locate DB shard value
+     * Locate table shard value
+     * @param tableName the rawTableName table name template without any sharding separator or shard id suffix 
      * @param value column or parameter value
      * @return table shard id
      */
-    abstract public String calculateTableShard(Object value);
+    abstract public String calculateTableShard(String rawTableName, Object value);
 
     public String locateDbShard(DalConfigure configure, String logicDbName,
             DalHints hints) {
@@ -137,7 +138,7 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
     }
 
     @Override
-    public String locateTableShard(DalConfigure configure, String logicDbName, String tabelName,
+    public String locateTableShard(DalConfigure configure, String logicDbName, String tableName,
             DalHints hints) {
         if(!isShardingByTable())
             throw new RuntimeException(String.format("Logic Db %s is not configured to be shard by table", logicDbName));
@@ -148,18 +149,18 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         
         // Shard value take the highest priority
         if(hints.is(DalHintEnum.tableShardValue)) {
-            return calculateTableShard(hints.get(DalHintEnum.tableShardValue));
+            return calculateTableShard(tableName, hints.get(DalHintEnum.tableShardValue));
         }
         
-        shard = evaluateTableShard(tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
+        shard = evaluateTableShard(tableName, tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
         if(shard != null)
             return shard;
         
-        shard = evaluateTableShard(tableColumnNames, (StatementParameters)hints.get(DalHintEnum.parameters));
+        shard = evaluateTableShard(tableName, tableColumnNames, (StatementParameters)hints.get(DalHintEnum.parameters));
         if(shard != null)
             return shard;
         
-        shard = evaluateTableShard(tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.fields));
+        shard = evaluateTableShard(tableName, tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.fields));
         if(shard != null)
             return shard;
         
@@ -171,9 +172,9 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         return value == null ? null : calculateDbShard(value);
     }
     
-    private String evaluateTableShard(String[] columns, StatementParameters parameters) {
+    private String evaluateTableShard(String tableName, String[] columns, StatementParameters parameters) {
         Object value = findValue(columns, parameters);
-        return value == null ? null : calculateTableShard(value);
+        return value == null ? null : calculateTableShard(tableName, value);
     }
     
     private Object findValue(String[] columns, StatementParameters parameters) {
@@ -195,9 +196,9 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         return value == null ? null : calculateDbShard(value);
     }
     
-    private String evaluateTableShard(String[] columns, Map<String, ?> shardColValues) {
+    private String evaluateTableShard(String tableName, String[] columns, Map<String, ?> shardColValues) {
         Object value = findValue(columns, shardColValues);
-        return value == null ? null : calculateTableShard(value);
+        return value == null ? null : calculateTableShard(tableName, value);
     }
     
     private Object findValue(String[] columns, Map<String, ?> colValues) {

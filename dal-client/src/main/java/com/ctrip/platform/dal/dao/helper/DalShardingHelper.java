@@ -82,8 +82,20 @@ public class DalShardingHelper {
 	 * @param hints
 	 * @return
 	 * @throws SQLException
+	 * @deprecated use below locateTableShardId method with tableName parameter
 	 */
-	public static String locateTableShardId(String logicDbName, String tableName, DalHints hints, StatementParameters parameters, Map<String, ?> fields) throws SQLException {
+	public static String locateTableShardId(String logicDbName, DalHints hints, StatementParameters parameters, Map<String, ?> fields) throws SQLException {
+	    return locateTableShardId(logicDbName, null, hints, parameters, fields);
+	}
+	
+    /**
+     * Locate table shard id by hints.
+     * @param logicDbName
+     * @param hints
+     * @return
+     * @throws SQLException
+     */
+    public static String locateTableShardId(String logicDbName, String tableName, DalHints hints, StatementParameters parameters, Map<String, ?> fields) throws SQLException {
 		DalConfigure config = DalClientFactory.getDalConfigure();
 		DalShardingStrategy strategy = config.getDatabaseSet(logicDbName).getStrategy();
 		
@@ -186,8 +198,20 @@ public class DalShardingHelper {
 	 * @param pojos
 	 * @return
 	 * @throws SQLException
+	 * @deprecated use below shuffleByTable method with tableName parameter
 	 */
-	public static Map<String, Map<Integer, Map<String, ?>>> shuffleByTable(String logicDbName, String tableName, String tableShardId, Map<Integer, Map<String, ?>> pojos) throws SQLException {
+	public static Map<String, Map<Integer, Map<String, ?>>> shuffleByTable(String logicDbName, String tableShardId, Map<Integer, Map<String, ?>> pojos) throws SQLException {
+	    return shuffleByTable(logicDbName, null, tableShardId, pojos);
+	}
+	
+    /**
+     * Shuffle by table shard id.
+     * @param logicDbName
+     * @param pojos
+     * @return
+     * @throws SQLException
+     */
+    public static Map<String, Map<Integer, Map<String, ?>>> shuffleByTable(String logicDbName, String tableName, String tableShardId, Map<Integer, Map<String, ?>> pojos) throws SQLException {
 		Map<String, Map<Integer, Map<String, ?>>> shuffled = new HashMap<>();
 		DalConfigure config = DalClientFactory.getDalConfigure();
 		

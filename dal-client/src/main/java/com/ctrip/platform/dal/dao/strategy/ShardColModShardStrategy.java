@@ -53,7 +53,7 @@ public class ShardColModShardStrategy extends AbstractColumnShardStrategy {
     }
 
     @Override
-    public String calculateTableShard(Object value) {
+    public String calculateTableShard(String tableName, Object value) {
         Long id = getLongValue(value);
         return String.valueOf(id%tableMod);
     }

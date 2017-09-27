@@ -306,6 +306,24 @@ public class ShardColModShardStrategyTest {
         assertEquals("0", strategy.locateDbShard(configure, logicDbName, new DalHints().setFields(fields)));
 	}
 	
+    @Test
+    public void testLocateTableShardByTableShardForBackwardCompatible() throws Exception {
+        DalConfigure configure = DalConfigureFactory.load();
+        ShardColModShardStrategy strategy = new ShardColModShardStrategy();
+        Map<String, String> settings = new HashMap<String, String>();
+        settings.put(ShardColModShardStrategy.COLUMNS, "id,id1");
+        settings.put(ShardColModShardStrategy.MOD, "2");
+        settings.put(ShardColModShardStrategy.TABLE_COLUMNS, "index,index1");
+        settings.put(ShardColModShardStrategy.TABLE_MOD, "4");
+        settings.put(ShardColModShardStrategy.SEPARATOR, "_");
+        strategy.initialize(settings);
+        
+        assertEquals("0", strategy.locateTableShard(configure, logicDbName, new DalHints().inTableShard("0")));
+        assertEquals("1", strategy.locateTableShard(configure, logicDbName, new DalHints().inTableShard("1")));
+        assertEquals("2", strategy.locateTableShard(configure, logicDbName, new DalHints().inTableShard("2")));
+        assertEquals("3", strategy.locateTableShard(configure, logicDbName, new DalHints().inTableShard("3")));
+    }
+    	
 	@Test
 	public void testLocateTableShardByTableShard() throws Exception {
 		DalConfigure configure = DalConfigureFactory.load();
