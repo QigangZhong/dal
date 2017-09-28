@@ -989,5 +989,5 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             }else
                 break;
         }
-}
+    }
 }
