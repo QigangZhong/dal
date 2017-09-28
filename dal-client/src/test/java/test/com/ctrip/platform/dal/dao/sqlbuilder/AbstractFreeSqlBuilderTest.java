@@ -1,10 +1,11 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.column;
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.table;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.text;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.OR;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;

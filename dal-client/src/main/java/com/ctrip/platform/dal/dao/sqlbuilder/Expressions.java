@@ -17,13 +17,22 @@ public class Expressions {
     public static Expression createColumnExpression(String template, String columnName) {
         return new ColumnExpression(template, columnName);
     }
+    
+    /**
+     * Create Expression clause with the given template
+     * @param template
+     * @return
+     */
+    public static Expression expression(String template) {
+        return new Expression(template);
+    }
 
     public static Expression expression(boolean condition, String template) {
         return condition ? new Expression(template) : NULL;
     }
     
     public static Clause expression(boolean condition, String template, String elseTemplate) {
-        return condition ? AbstractFreeSqlBuilder.expression(template) : AbstractFreeSqlBuilder.expression(elseTemplate);
+        return condition ? expression(template) : expression(elseTemplate);
     }
     
     public static Clause leftBracket = new Bracket(true);

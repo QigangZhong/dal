@@ -61,7 +61,7 @@ public class ExpressionsTest {
     
     @Test
     public void testBracket() throws SQLException {
-        Clause test = bracket(AbstractFreeSqlBuilder.expression(template));
+        Clause test = bracket(expression(template));
         setEnv(test);
 
         assertEquals("("+template+")", test.build());

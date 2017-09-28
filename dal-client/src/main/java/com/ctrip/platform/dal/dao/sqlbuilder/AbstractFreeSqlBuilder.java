@@ -156,15 +156,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
-     * Create Expression clause with the given template
-     * @param template
-     * @return
-     */
-    public static Expression expression(String template) {
-        return new Expression(template);
-    }
-    
-    /**
      * Basic append methods definition
      */
     
@@ -291,7 +282,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder appendExpression(String expression) {
-        return append(expression(expression));
+        return append(new Expression(expression));
     }
     
     /**
@@ -379,10 +370,23 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(WHERE).appendExpressions(expressions);
     }
     
+    /**
+     * Append ORDER BY with column name
+     * 
+     * @param columnName
+     * @param ascending
+     * @return
+     */
     public AbstractFreeSqlBuilder orderBy(String columnName, boolean ascending){
         return append(ORDER_BY).append(column(columnName)).appendWhen(ascending, ASC, DESC);
     }
     
+    /**
+     * Append GROUP BY with column name
+     * 
+     * @param columnName
+     * @return
+     */
     public AbstractFreeSqlBuilder groupBy(String columnName) {
         return append(GROUP_BY).append(column(columnName));
     }
@@ -391,6 +395,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(GROUP_BY).append(condition);
     }
     
+    /**
+     * Append HAVING with condition
+     * 
+     * @param condition
+     * @return
+     */
     public AbstractFreeSqlBuilder having(String condition) {
         return append(HAVING).append(condition);
     }
