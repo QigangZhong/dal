@@ -251,7 +251,7 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testWhereClause() {
         AbstractFreeSqlBuilder test = createDisabled();
-        test.where(expression("count() "), text(template));
+        test.where(expression("count()"), text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("WHERE count() template", test.build());
@@ -329,7 +329,7 @@ public class AbstractFreeSqlBuilderTest {
         test.bracket(text(template), expression(expression));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals("(template" + expression + ")", test.build());
+        assertEquals("(template " + expression + ")", test.build());
     }
     
     @Test
@@ -533,7 +533,7 @@ public class AbstractFreeSqlBuilderTest {
         AbstractFreeSqlBuilder test = createDisabled();
         test.appendExpressions(AND).bracket(AND, OR, AND);
         test.disableAutoMeltdown();
-        assertEquals("AND ( AND  OR  AND )", test.build());
+        assertEquals("AND(AND OR AND)", test.build());
     }
     
     @Test
@@ -549,12 +549,12 @@ public class AbstractFreeSqlBuilderTest {
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND).appendColumn(template);
-        assertEquals(template + wrappedTemplate, test.build());
+        assertEquals(template + " " +wrappedTemplate, test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND).appendTable(template);
-        assertEquals(template + wrappedTemplate, test.build());
+        assertEquals(template + " " + wrappedTemplate, test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
@@ -564,11 +564,11 @@ public class AbstractFreeSqlBuilderTest {
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND).appendTable(template).append(AND).append(expression(template)).nullable(null);
-        assertEquals(template+wrappedTemplate, test.build());
+        assertEquals(template+ " " + wrappedTemplate, test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND, template).appendTable(template).append(AND).append(expression(template)).nullable(null);
-        assertEquals("template AND (template)[template]", test.build());
+        assertEquals("template AND(template)[template]", test.build());
     }
 }

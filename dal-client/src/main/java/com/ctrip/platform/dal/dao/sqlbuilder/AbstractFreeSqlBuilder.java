@@ -34,19 +34,27 @@ import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Operator;
  *
  */
 public class AbstractFreeSqlBuilder implements SqlBuilder {
+    /**
+     * Because builder will not append space before and after ( or ), 
+     * you can append EMPTY to bypass this restriction. 
+     */
     public static final String EMPTY = "";
-    public static final String SPACE = " ";
-    public static final String COMMA = ", ";
     public static final String PLACE_HOLDER = "?";
-    public static final String SELECT = "SELECT ";
-    public static final String FROM = " FROM ";
-    public static final String WHERE= " WHERE ";
-    public static final String AS = " AS ";
-    public static final String ORDER_BY = "ORDER BY ";
-    public static final String ASC = " ASC";
-    public static final String DESC = " DESC";
-    public static final String GROUP_BY = " GROUP BY ";
-    public static final String HAVING = " HAVING ";
+    
+    /**
+     * Builder will not insert space between COMMA.
+     */
+    public static final Text COMMA = text(",");
+    public static final Text SPACE = text(" ");
+    public static final Text SELECT = text("SELECT");
+    public static final Text FROM = text("FROM");
+    public static final Text WHERE= text("WHERE");
+    public static final Text AS = text("AS");
+    public static final Text ORDER_BY = text("ORDER BY");
+    public static final Text ASC = text("ASC");
+    public static final Text DESC = text("DESC");
+    public static final Text GROUP_BY = text("GROUP BY");
+    public static final Text HAVING = text("HAVING");
     
     private boolean enableAutoMeltdown = true;
     private BuilderContext context = new BuilderContext();
@@ -191,12 +199,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * 
      * append(
      *          "orderId > ?"
-     *          and(),
-     *          leftBracket(),
-     *          equals(),
+     *          AND,
+     *          leftBracket,
+     *          NOT, equals("Abc"),
      *          expression("count(1)"),
-     *          rightBracket(),
-     *          or(),
+     *          rightBracket,
+     *          OR,
      *          ...
      *       )
      * @param templates
@@ -729,8 +737,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return false;
         }
 
-        public String build() throws SQLException {
+        public String build() {
             return template;
+        }
+        
+        public String toString() {
+            return build();
         }
     }
     
@@ -831,7 +843,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         public String build() throws SQLException {
-            return getDbCategory() == DatabaseCategory.SqlServer ? SPACE + SQL_SERVER_NOLOCK : EMPTY;
+            return getDbCategory() == DatabaseCategory.SqlServer ? SQL_SERVER_NOLOCK : EMPTY;
         }
     }
     
@@ -897,17 +909,31 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
+    /**
+     * If there is COMMA, then the leading space will not be appended.
+     * If there is bracket, then both leading and trailing space will be omitted.
+     * @param clauseList
+     * @return
+     * @throws SQLException
+     */
     private String finalBuild(List<Clause> clauseList) throws SQLException {
         StringBuilder sb = new StringBuilder();
-        for(Clause clause: clauseList) {
-            sb.append(clause.build());
+        for(int i = 0; i < clauseList.size(); i ++) {
+            Clause curClause = clauseList.get(i);
+            Clause nextClause = (i == clauseList.size() - 1) ? null: clauseList.get(i+1);
+            
+            sb.append(curClause.build());
+            
+            /**
+             * Builder will not insert space before COMMA and bracket.
+             */
+            if(curClause.isBracket() || nextClause != null && (nextClause.isBracket() || nextClause == COMMA))
+                continue;
+            
+            sb.append(SPACE);
         }
         
         return sb.toString().trim();
-    }
-    
-    private boolean isQualifiedClause(Clause clause) {
-        return clause instanceof Expression || clause instanceof Bracket || clause instanceof Operator;
     }
     
     // TODO unify all meltdown logic

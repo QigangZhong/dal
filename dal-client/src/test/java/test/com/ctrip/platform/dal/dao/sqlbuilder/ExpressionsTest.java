@@ -72,7 +72,7 @@ public class ExpressionsTest {
         Clause test = AND;
         setEnv(test);
 
-        assertEquals(" AND ", test.build());
+        assertEquals("AND", test.build());
     }
     
     @Test
@@ -80,7 +80,7 @@ public class ExpressionsTest {
         Clause test = OR;
         setEnv(test);
 
-        assertEquals(" OR ", test.build());
+        assertEquals("OR", test.build());
     }
     
     @Test
@@ -88,7 +88,7 @@ public class ExpressionsTest {
         Clause test = NOT;
         setEnv(test);
 
-        assertEquals(" NOT ", test.build());
+        assertEquals("NOT", test.build());
     }
     
     @Test

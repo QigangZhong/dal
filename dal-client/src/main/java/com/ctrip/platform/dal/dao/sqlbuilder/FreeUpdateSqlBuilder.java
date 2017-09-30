@@ -8,12 +8,12 @@ import com.ctrip.platform.dal.common.enums.DatabaseCategory;
  * @author jhhe
  */
 public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
-    public static final String INSERT_INTO = "INSERT INTO ";
-    public static final String VALUES = " VALUES ";
+    public static final String INSERT_INTO = "INSERT INTO";
+    public static final String VALUES = "VALUES";
 
-    public static final String DELETE_FROM = "DELETE FROM ";
-    public static final String UPDATE = "UPDATE ";
-    public static final String SET = " SET ";
+    public static final String DELETE_FROM = "DELETE FROM";
+    public static final String UPDATE = "UPDATE";
+    public static final String SET = "SET";
     
 	public FreeUpdateSqlBuilder(DatabaseCategory dbCategory) {
 	    setDbCategory(dbCategory);
@@ -59,7 +59,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
 	 * @return
 	 */
 	public FreeUpdateSqlBuilder values(String...columnNames) {
-	    append(SPACE, Expressions.leftBracket);
+	    append(EMPTY, Expressions.leftBracket);
         StringBuilder valueFields = new StringBuilder();
         
         for (int i = 0; i < columnNames.length; i++) {
@@ -67,11 +67,11 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
             valueFields.append(PLACE_HOLDER);
             if(i != columnNames.length -1) {
                 append(COMMA);
-                valueFields.append(COMMA);
+                valueFields.append(", ");
             }
         }
         
-        append(Expressions.rightBracket, VALUES, Expressions.bracket(text(valueFields)));
+        append(Expressions.rightBracket, EMPTY, VALUES, EMPTY, Expressions.bracket(text(valueFields)));
         
         return this;
     }
@@ -124,7 +124,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
     public FreeUpdateSqlBuilder set(String...columnNames) {
         append(SET);
         for (int i = 0; i < columnNames.length; i++) {
-            appendColumn(columnNames[i]).append("=?");
+            append(Expressions.createColumnExpression("%s=?", columnNames[i]));
             if(i != columnNames.length -1)
                 append(COMMA);
         }
