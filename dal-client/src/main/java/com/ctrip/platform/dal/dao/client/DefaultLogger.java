@@ -1,11 +1,11 @@
 package com.ctrip.platform.dal.dao.client;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ctrip.platform.dal.dao.DalEventEnum;
 import com.ctrip.platform.dal.dao.Version;
+import com.ctrip.platform.dal.dao.helper.DalBase64;
 import com.ctrip.platform.dal.dao.helper.LoggerHelper;
 import com.ctrip.platform.dal.dao.markdown.MarkDownInfo;
 import com.ctrip.platform.dal.dao.markdown.MarkupInfo;
@@ -241,11 +241,5 @@ public class DefaultLogger extends LoggerAdapter implements DalLogger {
 	@Override
 	public String getAppID() {
 		return "999999";
-	}
-	
-	private class DalBase64 extends Base64 {
-	    protected int  getDefaultBufferSize() {
-            return 256;
-	    }
 	}
 }
