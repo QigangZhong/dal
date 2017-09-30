@@ -42,7 +42,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String PLACE_HOLDER = "?";
     
     /**
-     * Builder will not insert space between COMMA.
+     * Builder will not insert space before COMMA.
      */
     public static final Text COMMA = text(",");
     public static final Text SPACE = text(" ");
