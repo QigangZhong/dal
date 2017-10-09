@@ -53,74 +53,68 @@ public class FreeSelectSqlBuilderTest {
     public void testSetTemplate() throws SQLException {
         FreeSelectSqlBuilder test = createTest();
         test.setTemplate(template).setTemplate(template);
-        assertEquals(template+template, test.build());
+        assertEquals(template+" " + template, test.build());
     }
     
     @Test
     public void testBuildSqlServerTop() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = createTest();
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.top(10);        
-        assertEquals("templatetemplatetemplate OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
+        assertEquals("template template template OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
     }
     
     @Test
     public void testBuildSqlServerAtPage() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = createTest();
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.atPage(10, 10);
-        assertEquals("templatetemplatetemplate OFFSET 90 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
+        assertEquals("template template template OFFSET 90 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
     }
     
     @Test
     public void testBuildSqlServerRange() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = createTest();
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.range(10, 10);
-        assertEquals("templatetemplatetemplate OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
+        assertEquals("template template template OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
 
     }
 
     @Test
     public void testBuildMySqlTop() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = new FreeSelectSqlBuilder(DatabaseCategory.MySql);
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.top(10);        
-        assertEquals("templatetemplatetemplate limit 0, 10", test.build());
+        assertEquals("template template template limit 0, 10", test.build());
     }
     
     @Test
     public void testBuildMySqlAtPage() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = new FreeSelectSqlBuilder(DatabaseCategory.MySql);
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.atPage(10, 10);
-        assertEquals("templatetemplatetemplate limit 90, 10", test.build());
+        assertEquals("template template template limit 90, 10", test.build());
     }
     
     @Test
     public void testBuildMySqlRange() throws SQLException {
-        String builtTpl = template+template+template;
         FreeSelectSqlBuilder test = new FreeSelectSqlBuilder(DatabaseCategory.MySql);
         test.setTemplate(template).setTemplate(template).append(template);
-        assertEquals(builtTpl, test.build());
+        assertEquals("template template template", test.build());
 
         test.range(10, 10);
-        assertEquals("templatetemplatetemplate limit 10, 10", test.build());
+        assertEquals("template template template limit 10, 10", test.build());
 
     }
 

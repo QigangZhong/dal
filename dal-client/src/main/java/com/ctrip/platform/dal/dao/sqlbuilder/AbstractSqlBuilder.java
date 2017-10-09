@@ -11,6 +11,8 @@ import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.MeltdownHelper.meltdown;
+
 public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 	
 	protected DatabaseCategory dbCategory = DatabaseCategory.MySql;
@@ -123,27 +125,8 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		if(whereClauseEntries.size() == 0)
 			return EMPTY;
 		
-		LinkedList<WhereClauseEntry> filtered = new LinkedList<>();
-		
-		for(WhereClauseEntry entry: whereClauseEntries) {
-			if(entry.isClause() && entry.isNull()){
-				meltDownNullValue(filtered);
-				continue;
-			}
-
-			if(entry.isBracket() && !((BracketClauseEntry)entry).isLeft()){
-				if(meltDownRightBracket(filtered))
-					continue;
-			}
-			
-			// AND/OR
-			if(entry.isOperator() && !entry.isClause()) {
-				if(meltDownAndOrOperator(filtered))
-					continue;
-			}
-			
-			filtered.add(entry);
-		}
+		@SuppressWarnings("unchecked")
+        List<WhereClauseEntry> filtered = (List<WhereClauseEntry>) meltdown(whereClauseEntries);
 		
 		StringBuilder sb = new StringBuilder();
 		for(WhereClauseEntry entry: filtered) {
@@ -155,61 +138,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			return "";
 		
 		return whereClause;
-	}
-	
-	private boolean meltDownAndOrOperator(LinkedList<WhereClauseEntry> filtered) {
-		// If it is the first element
-		if(filtered.size() == 0)
-			return true;
-
-		WhereClauseEntry entry = filtered.getLast();
-		// The last one is "("
-		if(entry.isBracket() && ((BracketClauseEntry)entry).isLeft())
-			return true;
-			
-		// AND/OR/NOT AND/OR
-		if(entry.isOperator()) {
-			return true;
-		}
-		return false;
-	}
-	
-	private boolean meltDownRightBracket(LinkedList<WhereClauseEntry> filtered) {
-		int bracketCount = 1;
-		while(filtered.size() > 0) {
-			WhereClauseEntry entry = filtered.getLast();
-			// One ")" only remove one "("
-			if(entry.isBracket() && ((BracketClauseEntry)entry).isLeft() && bracketCount == 1){
-				filtered.removeLast();
-				bracketCount--;
-				continue;
-			}
-			
-			// Remove any leading AND/OR/NOT (BOT is both operator and clause)
-			if(entry.isOperator()) {
-				filtered.removeLast();
-				continue;
-			}
-			
-			break;
-		}
-		
-		return bracketCount == 0? true : false;
-	}
-	private void meltDownNullValue(LinkedList<WhereClauseEntry> filtered) {
-		if(filtered.size() == 0)
-			return;
-
-		while(filtered.size() > 0) {
-			WhereClauseEntry entry = filtered.getLast();
-			// Remove any leading AND/OR/NOT (NOT is both operator and clause)
-			if(entry.isOperator()) {
-				filtered.removeLast();
-				continue;
-			}
-			
-			break;
-		}
 	}
 	
 	/**
@@ -790,25 +718,33 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
         }
 	}
 	
-	private static abstract class WhereClauseEntry {
+	private static abstract class WhereClauseEntry implements ClauseClassifier {
 		private String clause; 
 		
-		public boolean isOperator() {
-			return false;
+		public boolean isExpression() {
+		    return true;
 		}
 		
+        public boolean isNull() {
+            return false;
+        }
+
 		public boolean isBracket() {
 			return false;
 		}
 		
-		public boolean isClause() {
-			return false;
+		public boolean isLeft() {
+		    return false;
 		}
 		
-		public boolean isNull() {
-			return false;
-		}
-		
+        public boolean isOperator() {
+            return false;
+        }
+        
+        public boolean isNot() {
+            return false;
+        }
+        
 		//To make it build late when DatabaseCategory is set
 		public abstract String getClause(DatabaseCategory dbCategory);
 		
@@ -819,10 +755,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 	
 	private static class NullValueClauseEntry extends WhereClauseEntry {
 		public boolean isNull() {
-			return true;
-		}
-
-		public boolean isClause() {
 			return true;
 		}
 		
@@ -840,10 +772,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			entry = new FieldEntry(field, paramValue, sqlType, sensitive);
 			whereFieldEntrys.add(entry);
 		}
-
-		public boolean isClause() {
-			return true;
-		}
 		
 		public String getClause(DatabaseCategory dbCategory) {
 			return String.format("%s %s ?", wrapField(dbCategory, entry.getFieldName()), condition);
@@ -859,10 +787,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			entry2 = new FieldEntry(field, paramValue2, sqlType, sensitive);
 			whereFieldEntrys.add(entry1);
 			whereFieldEntrys.add(entry2);
-		}
-
-		public boolean isClause() {
-			return true;
 		}
 
 		public String getClause(DatabaseCategory dbCategory) {
@@ -913,10 +837,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			whereFieldEntrys.addAll(entries);
 		}
 
-		public boolean isClause() {
-			return true;
-		}
-
 		public String getClause(DatabaseCategory dbCategory) {
 			return compatible ?
 					wrapField(dbCategory, field) + questionMarkList:
@@ -933,10 +853,6 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			this.isNull=  isNull;
 		}
 
-		public boolean isClause() {
-			return true;
-		}
-		
 		public String getClause(DatabaseCategory dbCategory) {
 			return wrapField(dbCategory, field) + (isNull ? " IS NULL" : " IS NOT NULL");		
 		}
@@ -945,15 +861,16 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 	private static class NotClauseEntry extends WhereClauseEntry {
 		public NotClauseEntry() {
 		}
-
-		public boolean isClause() {
-			return true;
-		}
 		
 		public boolean isOperator() {
 			return true;
 		}
 		
+		
+        public boolean isNot() {
+            return true;
+        }
+        		
 		public String getClause(DatabaseCategory dbCategory) {
 			return "NOT";
 		}
@@ -969,6 +886,10 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			return operator;
 		}
 		
+        public boolean isExpression() {
+            return false;
+        }
+        
 		@Override
 		public boolean isOperator() {
 			return true;
@@ -992,6 +913,10 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		public String getClause(DatabaseCategory dbCategory) {
 			return left? "(" : ")";
 		}
+
+		public boolean isExpression() {
+            return false;
+        }
 		
 		public boolean isBracket() {
 			return true;

@@ -15,6 +15,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	AbstractFreeSqlBuilderTest.class,
 	ExpressionsTest.class,
 	FreeUpdateSqlBuilderTest.class,
+	FreeSelectSqlBuilderTest.class
 	})
 public class AllTests {
 

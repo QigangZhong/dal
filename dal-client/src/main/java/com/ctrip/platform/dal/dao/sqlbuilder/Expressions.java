@@ -117,9 +117,9 @@ public class Expressions {
             return true;
         }
         
-        public boolean isRemovable() {
+        public boolean isNot() {
             return this == NOT;
-        }        
+        }
     }
     
     public static class Bracket extends Clause {
@@ -127,7 +127,7 @@ public class Expressions {
         public Bracket(boolean isLeft) {
             left = isLeft;
         }
-        
+
         public String build() {
             return left? "(" : ")";
         }
@@ -152,6 +152,10 @@ public class Expressions {
         public Expression nullable(Object o) {
             nullValue = (o == null);
             return this;
+        }
+
+        public boolean isExpression() {
+            return true;
         }
         
         public boolean isNull() {

@@ -4,6 +4,7 @@ import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.buildShardStr;
 import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.isTableShardingEnabled;
 import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.locateTableShardId;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
+import static com.ctrip.platform.dal.dao.sqlbuilder.MeltdownHelper.meltdown;
 
 import java.sql.SQLException;
 import java.util.LinkedList;
@@ -14,9 +15,7 @@ import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalClientFactory;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
-import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Bracket;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
-import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Operator;
 
 /**
  * This sql builder only handles template creation. It will not do with the parameters
@@ -59,6 +58,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     private boolean enableAutoMeltdown = true;
     private BuilderContext context = new BuilderContext();
     private ClauseList clauses = new ClauseList();
+    private MeltdownHelper meltdownHelper = new MeltdownHelper ();
     
     public AbstractFreeSqlBuilder() {
         context = new BuilderContext();
@@ -116,12 +116,13 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * It will append where and check if the value is start of "and" or "or", of so, the leading 
      * "and" or "or" will be removed.
      */
+    @SuppressWarnings("unchecked")
     public String build() {
         try {
             List<Clause> clauseList = clauses.list;
 
             if(enableAutoMeltdown)
-                clauseList = meltdownFrom(clauseList);
+                clauseList = (List<Clause>)meltdown(clauseList);
             
             return finalBuild(clauseList);
         } catch (SQLException e) {
@@ -627,15 +628,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(Expressions.isNotNull(columnName));
     }
     
-    private interface ClauseClassifier {
-        boolean isRemovable();
-        boolean isNull();
-        boolean isBracket();
-        boolean isLeft();
-        boolean isOperator();
-        String build() throws SQLException;
-    }
-    
     /**
      * Because certain infomation may not be in place during sql construction,
      * the build process is separated into two phases. One is preparing: setBuilderCOntext(), this 
@@ -671,8 +663,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return context.getParameters();
         }
 
-        public boolean isRemovable() {
-            return true;
+        public boolean isExpression() {
+            return false;
         }
 
         public boolean isNull() {
@@ -690,6 +682,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         public boolean isOperator() {
             return false;
         }
+        
+        public boolean isNot() {
+            return false;
+        }
+        
+        public abstract String build() throws SQLException;
     }
     
     public static class ClauseList extends Clause {
@@ -712,7 +710,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         public boolean isEmpty() {
             return list.isEmpty();
         }
-        
+
         @Override
         public String build() throws SQLException {
             StringBuilder sb = new StringBuilder();
@@ -733,10 +731,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             this.template =template;
         }
         
-        public boolean isRemovable() {
-            return false;
-        }
-
         public String build() {
             return template;
         }
@@ -761,10 +755,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         public Column as(String alias) {
             this.alias = alias;
             return this;
-        }
-        
-        public boolean isRemovable() {
-            return false;
         }
         
         public String build() {
@@ -806,10 +796,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
-        public boolean isRemovable() {
-            return false;
-        }
-        
         @Override
         public String build() throws SQLException {
             String logicDbName = getLogicDbName();
@@ -837,10 +823,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
     private static class SqlServerWithNoLock extends Clause {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
-
-        public boolean isRemovable() {
-            return false;
-        }
         
         public String build() throws SQLException {
             return getDbCategory() == DatabaseCategory.SqlServer ? SQL_SERVER_NOLOCK : EMPTY;
@@ -934,86 +916,5 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         return sb.toString().trim();
-    }
-    
-    // TODO unify all meltdown logic
-    private LinkedList<Clause> meltdownFrom(List<Clause> clauseList) {
-        LinkedList<Clause> filtered = new LinkedList<>();
-        
-        for(Clause entry: clauseList) {
-            if(entry.isRemovable() && entry.isNull()){
-                meltDownNullValue(filtered);
-                continue;
-            }
-
-            if(entry.isBracket() && !entry.isLeft()){
-                if(meltDownRightBracket(filtered))
-                    continue;
-            }
-            
-            // AND/OR
-            if(entry.isOperator() && !entry.isRemovable()) {
-                if(meltDownAndOrOperator(filtered))
-                    continue;
-            }
-            
-            filtered.add(entry);
-        }
-        
-        return filtered;
-    }
-    
-    private boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
-        // If it is the first element
-        if(filtered.isEmpty())
-            return true;
-
-        ClauseClassifier entry = filtered.getLast();
-
-        // If it is not a removable clause. Reach the beginning of the meltdown section
-        if(!entry.isRemovable())
-            return true;
-
-        // The last one is "("
-        if(entry.isBracket() && entry.isLeft())
-            return true;
-            
-        // AND/OR/NOT AND/OR
-        if(entry.isOperator()) {
-            return true;
-        }
-        
-        return false;
-    }
-    
-    private boolean meltDownRightBracket(LinkedList<Clause> filtered) {
-        int bracketCount = 1;
-        while(!filtered.isEmpty()) {
-            ClauseClassifier entry = filtered.getLast();
-            // One ")" only remove one "("
-            if(entry.isBracket() && entry.isLeft() && bracketCount == 1){
-                filtered.removeLast();
-                bracketCount--;
-            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (NOT is both operator and clause)
-                filtered.removeLast();
-            } else
-                break;
-        }
-        
-        return bracketCount == 0? true : false;
-    }
-    
-    private void meltDownNullValue(LinkedList<Clause> filtered) {
-        if(filtered.isEmpty())
-            return;
-
-        while(!filtered.isEmpty()) {
-            ClauseClassifier entry = filtered.getLast();
-            // Remove any leading AND/OR/NOT (NOT is both operator and clause)
-            if(entry.isOperator()) {
-                filtered.removeLast();
-            }else
-                break;
-        }
     }
 }
