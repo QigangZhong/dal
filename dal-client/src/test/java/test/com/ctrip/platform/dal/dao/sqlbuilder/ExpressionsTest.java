@@ -1,6 +1,23 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.NOT;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.OR;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.between;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.bracket;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.greaterThan;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.greaterThanEquals;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.in;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.leftBracket;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.lessThan;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.lessThanEquals;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.like;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notEqual;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notIn;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notLike;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.rightBracket;
 import static org.junit.Assert.assertEquals;
 
 import java.sql.SQLException;
@@ -8,7 +25,7 @@ import java.sql.SQLException;
 import org.junit.Test;
 
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder;
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
+import com.ctrip.platform.dal.dao.sqlbuilder.Clause;
 
 public class ExpressionsTest {
     private static final String template = "template";

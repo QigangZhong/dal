@@ -6,6 +6,7 @@ package com.ctrip.platform.dal.dao.sqlbuilder;
  * "head" will add % in front of the parameter; 
  * "tail" will add % behind the parameter;
  * "both" will add % at both end of the parameter;
+ * "none" will not add and % to the parameter;
  * 
  * Eg.
  * If the parameter is "abc", then header changed the 

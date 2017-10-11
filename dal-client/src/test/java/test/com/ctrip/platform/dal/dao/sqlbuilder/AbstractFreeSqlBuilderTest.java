@@ -17,8 +17,8 @@ import org.junit.Test;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder;
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Text;
+import com.ctrip.platform.dal.dao.sqlbuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 public class AbstractFreeSqlBuilderTest {
@@ -505,7 +505,7 @@ public class AbstractFreeSqlBuilderTest {
         test.isNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " IS NULL ?", test.build());
+        assertEquals(wrappedTemplate + " IS NULL", test.build());
     }
     
     @Test
@@ -514,7 +514,7 @@ public class AbstractFreeSqlBuilderTest {
         test.isNotNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " IS NOT NULL ?", test.build());
+        assertEquals(wrappedTemplate + " IS NOT NULL", test.build());
     }
     
     @Test
@@ -533,7 +533,7 @@ public class AbstractFreeSqlBuilderTest {
         AbstractFreeSqlBuilder test = createDisabled();
         test.appendExpressions(AND).bracket(AND, OR, AND);
         test.disableAutoMeltdown();
-        assertEquals("AND(AND OR AND)", test.build());
+        assertEquals("AND (AND OR AND )", test.build());
     }
     
     @Test
@@ -569,6 +569,6 @@ public class AbstractFreeSqlBuilderTest {
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND, template).appendTable(template).append(AND).append(expression(template)).nullable(null);
-        assertEquals("template AND(template)[template]", test.build());
+        assertEquals("template AND (template) [template]", test.build());
     }
 }

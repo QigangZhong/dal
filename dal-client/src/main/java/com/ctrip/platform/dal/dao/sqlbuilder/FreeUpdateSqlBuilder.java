@@ -59,7 +59,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
 	 * @return
 	 */
 	public FreeUpdateSqlBuilder values(String...columnNames) {
-	    append(EMPTY, Expressions.leftBracket);
+	    append(Expressions.leftBracket);
         StringBuilder valueFields = new StringBuilder();
         
         for (int i = 0; i < columnNames.length; i++) {
@@ -71,7 +71,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
             }
         }
         
-        append(Expressions.rightBracket, EMPTY, VALUES, EMPTY, Expressions.bracket(text(valueFields)));
+        append(Expressions.rightBracket, VALUES, Expressions.bracket(text(valueFields)));
         
         return this;
     }

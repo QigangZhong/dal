@@ -1,942 +1,210 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
-import com.ctrip.platform.dal.common.enums.DatabaseCategory;
-import com.ctrip.platform.dal.dao.StatementParameter;
-import com.ctrip.platform.dal.dao.StatementParameters;
+/**
+ * Parent of AbstractFreeSqlBuilder and AbstractTableSqlBuilder
+ * 
+ * @author jhhe
+ */
+public abstract class AbstractSqlBuilder implements SqlBuilder {
+    private static final String SPACE = " ";
+    
+    private BuilderContext context;
+    private ClauseList clauses = new ClauseList();
+    private boolean enableAutoMeltdown = true;
+    private boolean enableSmartSpaceSkipping= true;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.MeltdownHelper.meltdown;
+    public AbstractSqlBuilder(BuilderContext context) {
+        clauses.setContext(context);
+        this.context = context;
+    }
+    
+    public BuilderContext getContext() {
+        return context;
+    }
 
-public abstract class AbstractSqlBuilder implements TableSqlBuilder {
-	
-	protected DatabaseCategory dbCategory = DatabaseCategory.MySql;
-	
-	protected StatementParameters parameters = new StatementParameters();
-	
-	protected int index = 1;
-	
-	protected List<FieldEntry> selectOrUpdataFieldEntrys =  new ArrayList<FieldEntry>();
-	
-	private LinkedList<WhereClauseEntry> whereClauseEntries = new LinkedList<>();
-	
-	private List<FieldEntry> whereFieldEntrys = new ArrayList<FieldEntry>();
-	
-	private String tableName;
-	
-	private boolean compatible = false;
-
-	public boolean isCompatible() {
-		return compatible;
-	}
-
-	public void setCompatible(boolean compatible) {
-		this.compatible = compatible;
-	}
-
-	public AbstractSqlBuilder from(String tableName) throws SQLException {
-		if(tableName ==null || tableName.isEmpty())
-			throw new SQLException("table name is illegal.");
-		
-		this.tableName = tableName;
-		return this;
-	}
-	
-	public AbstractSqlBuilder setDatabaseCategory(DatabaseCategory dbCategory) throws SQLException {
-		Objects.requireNonNull(dbCategory, "DatabaseCategory can't be null.");
-		this.dbCategory = dbCategory;
-		return this;
-	}
-	
-	public String getTableName() {
-		return tableName;
-	}
-	
-	public String getTableName(String shardStr) {
-		return tableName + shardStr;
-	}
-
-	/**
-	 * 获取StatementParameters
-	 * @return
-	 */
-	public StatementParameters buildParameters(){
-		parameters = new StatementParameters();
-		index = 1;
-		for(FieldEntry entry : selectOrUpdataFieldEntrys) {
-			parameters.add(new StatementParameter(index++, entry.getSqlType(), entry.getParamValue()).setSensitive(entry.isSensitive()).setName(entry.getFieldName()).setInParam(entry.isInParam()));
-		}
-		for(FieldEntry entry : whereFieldEntrys){
-			parameters.add(new StatementParameter(index++, entry.getSqlType(), entry.getParamValue()).setSensitive(entry.isSensitive()).setName(entry.getFieldName()).setInParam(entry.isInParam()));
-		}
-		return this.parameters;
-	}
-	
-	/**
-	 * 获取设置StatementParameters的index，返回值为构建后的sql中需要传值的个数加1
-	 * @return
-	 */
-	public int getStatementParameterIndex(){
-		return this.index;
-	}
-	
-	/**
-	 * 对字段进行包裹，数据库是MySQL则用 `进行包裹，数据库是SqlServer则用[]进行包裹
-	 * @param fieldName
-	 * @return
-	 */
-	public String wrapField(String fieldName){
-		return wrapField(dbCategory, fieldName);
-	}
-	
-	/**
-	 * 对字段进行包裹，数据库是MySQL则用 `进行包裹，数据库是SqlServer则用[]进行包裹
-	 * @param fieldName
-	 * @return
-	 */
-	public static String wrapField(DatabaseCategory dbCategory, String fieldName){
-		if("*".equalsIgnoreCase(fieldName) || fieldName.contains("ROW_NUMBER") || fieldName.contains(",")){
-			return fieldName;
-		}
-
-		return dbCategory.quote(fieldName);
-	}
-	
-	/**
-	 * build sql.
-	 * @return
-	 */
-	public abstract String build();
-	
-	private static final String EMPTY = "";
-	
-	/**
-	 * build where expression
-	 * @return
-	 */
-	public String getWhereExp(){
-//		return whereExp.toString().trim().isEmpty()? "": "WHERE"+ whereExp.toString();
-
-		if(whereClauseEntries.size() == 0)
-			return EMPTY;
-		
-		@SuppressWarnings("unchecked")
-        List<WhereClauseEntry> filtered = (List<WhereClauseEntry>) meltdown(whereClauseEntries);
-		
-		StringBuilder sb = new StringBuilder();
-		for(WhereClauseEntry entry: filtered) {
-			sb.append(entry.getClause(dbCategory)).append(" ");
-		}
-		
-		String whereClause = sb.toString().trim();
-		if(whereClause.isEmpty())
-			return "";
-		
-		return whereClause;
-	}
-	
-	/**
-	 * 追加AND连接
-	 * @return
-	 */
-	public AbstractSqlBuilder and(){
-		return add(OperatorClauseEntry.AND());
-	}
-	
-	/**
-	 * 追加OR连接
-	 * @return
-	 */
-	public AbstractSqlBuilder or(){
-		return add(OperatorClauseEntry.OR());
-	}
-	
-	private static final boolean DEFAULT_SENSITIVE = false;
-	
-	/**
-	 *  等于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder equal(String field, Object paramValue, int sqlType) throws SQLException {
-		return equal(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder equal(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "=", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  等于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder equalNullable(String field, Object paramValue, int sqlType) {
-		return equalNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder equalNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "=", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  不等于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder notEqual(String field, Object paramValue, int sqlType) throws SQLException {
-		return notEqual(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder notEqual(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "!=", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  不等于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder notEqualNullable(String field, Object paramValue, int sqlType) {
-		return notEqualNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder notEqualNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "!=", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  大于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder greaterThan(String field, Object paramValue, int sqlType) throws SQLException {
-		return greaterThan(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder greaterThan(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, ">", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  大于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder greaterThanNullable(String field, Object paramValue, int sqlType) {
-		return greaterThanNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder greaterThanNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, ">", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  大于等于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder greaterThanEquals(String field, Object paramValue, int sqlType) throws SQLException {
-		return greaterThanEquals(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder greaterThanEquals(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, ">=", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  大于等于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder greaterThanEqualsNullable(String field, Object paramValue, int sqlType) {
-		return greaterThanEqualsNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder greaterThanEqualsNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, ">=", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  小于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder lessThan(String field, Object paramValue, int sqlType) throws SQLException {
-		return lessThan(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder lessThan(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "<", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  小于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder lessThanNullable(String field, Object paramValue, int sqlType) {
-		return lessThanNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder lessThanNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "<", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  小于等于操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder lessThanEquals(String field, Object paramValue, int sqlType) throws SQLException {
-		return lessThanEquals(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder lessThanEquals(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "<=", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  小于等于操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder lessThanEqualsNullable(String field, Object paramValue, int sqlType) {
-		return lessThanEqualsNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder lessThanEqualsNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "<=", paramValue, sqlType, sensitive);
-	}
-
-	/**
-	 *  Between操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValue1 字段值1
-	 * @param paramValue2 字段值2
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder between(String field, Object paramValue1, Object paramValue2, int sqlType) throws SQLException {
-		return between(field, paramValue1, paramValue2, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder between(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive) throws SQLException {
-		if (paramValue1 == null || paramValue2 == null)
-			throw new SQLException(field + " is not support null value.");
-
-		return add(new BetweenClauseEntry(field, paramValue1, paramValue2, sqlType, sensitive, whereFieldEntrys));
-	}
-	
-	/**
-	 *  Between操作，若字段值为NULL，则此条件不会加入SQL中
-	 * @param field 字段
-	 * @param paramValue1 字段值1
-	 * @param paramValue2 字段值2
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder betweenNullable(String field, Object paramValue1, Object paramValue2, int sqlType) {
-		return betweenNullable(field, paramValue1, paramValue2, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder betweenNullable(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive) {
-		//如果paramValue==null，则field不会作为条件加入到最终的SQL中。
-		if(paramValue1 == null || paramValue2 == null)
-			return add(new NullValueClauseEntry());
-
-		return add(new BetweenClauseEntry(field, paramValue1, paramValue2, sqlType, sensitive, whereFieldEntrys));
-	}
-
-	/**
-	 *  Like操作，且字段值不能为NULL，否则会抛出SQLException. 
-	 *  
-	 *  Please make sure there is "%" at certain place in the parameter. 
-	 *  If there is no "%", DAL will not auto append any "%" in the original prameter.
-	 *  In this case, like work exactly as equal expression.
-	 *  
-	 *  If you don't want to add "%" in the parameter by yourself, you can use the other 
-	 *  like method with MatchPattern parameter.
-	 *   
-	 * @param field 字段
-	 * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
-	 * @return
-	 * @throws SQLException
-	 * @Deprecated just a marker to catch your eye about the usage notification
-	 */
-	public AbstractSqlBuilder like(String field, Object paramValue, int sqlType) throws SQLException {
-		return like(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
-	
     /**
-     *  Like操作，且字段值不能为NULL，否则会抛出SQLException. 
-     *  
-     *  Please make sure there is "%" at certain place in the parameter. 
-     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
-     *  In this case, like work exactly as equal expression.
-     *  
-     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
-     *  like method with MatchPattern parameter.
-     *   
-     * @param field 字段
-     * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
-     * @param sensitive if the parameter will be replaced by "*" in the log output.
-     * @return
-     * @throws SQLException
-     * @Deprecated just a marker to catch your eye about the usage notification
+     * Default logic for building the sql statement.
+     * 
+     * It will append where and check if the value is start of "and" or "or", of so, the leading 
+     * "and" or "or" will be removed.
      */
-	public AbstractSqlBuilder like(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "LIKE", paramValue, sqlType, sensitive);
-	}
-	
-	/**
-	 *  Like操作，若字段值为NULL，则此条件不会加入SQL中
-	 *  
-     *  Please make sure there is "%" at certain place in the parameter. 
-     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
-     *  In this case, like work exactly as equal expression.
-     *  
-     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
-     *  like method with MatchPattern parameter.
-     *  
-	 * @param field 字段
-	 * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
-	 * @return
-	 * @throws SQLException
-     * @Deprecated just a marker to catch your eye about the usage notification
-	 */
-	public AbstractSqlBuilder likeNullable(String field, Object paramValue, int sqlType) {
-		return likeNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
-	}
+    @Override
+    public String build() {
+        try {
+            List<Clause> clauseList = clauses.getList();
+
+            if(enableAutoMeltdown)
+                clauseList = (List<Clause>)meltdown(clauseList);
+            
+            return concat(clauseList);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
-     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
-     *  
-     *  Please make sure there is "%" at certain place in the parameter. 
-     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
-     *  In this case, like work exactly as equal expression.
-     *  
-     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
-     *  like method with MatchPattern parameter.
-     *  
-     * @param field 字段
-     * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
-     * @param sensitive if the parameter will be replaced by "*" in the log output.
-     * @return
-     * @throws SQLException
-     * @Deprecated just a marker to catch your eye about the usage notification
-     */	
-	public AbstractSqlBuilder likeNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "LIKE", paramValue, sqlType, sensitive);
-	}
-
-    /**
-     *  Like操作，且字段值不能为NULL，否则会抛出SQLException
-     *  
-     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
-     *  
-     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
-     *  like method without MatchPattern parameter.
-     *  
-     * @param field 字段
-     * @param paramValue 字段值
-     * @param pattern how DAL will append "%" for the input paramValue
-     * @return
-     * @throws SQLException
+     * Disable the auto removal of AND, OR, NOT, (, ) and nullable expression
      */
-    public AbstractSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType) throws SQLException {
-        return like(field, paramValue, pattern, sqlType, DEFAULT_SENSITIVE);
+    public void disableAutoMeltdown() {
+        enableAutoMeltdown = false;
     }
     
     /**
-     *  Like操作，且字段值不能为NULL，否则会抛出SQLException
-     *  
-     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
-     *  
-     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
-     *  like method without MatchPattern parameter.
-     *  
-     * @param field 字段
-     * @param paramValue 字段值
-     * @param pattern how DAL will append "%" for the input paramValue
-     * @param sensitive if the parameter will be replaced by "*" in the log output.
-     * @return
-     * @throws SQLException
+     * Disable the auto space removing around bracket and before COMMA
      */
-    public AbstractSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) throws SQLException {
-        return addParam(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
+    public AbstractSqlBuilder disableSpaceSkipping() {
+        enableSmartSpaceSkipping = false;
+        return this;
     }
     
     /**
-     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
-     *  
-     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
-     *  
-     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
-     *  like method without MatchPattern parameter.
-     *  
-     * @param field 字段
-     * @param paramValue 字段值
-     * @param pattern how DAL will append "%" for the input paramValue
-     * @return
-     * @throws SQLException
+     * Enable the auto space removing around bracket and before COMMA
      */
-    public AbstractSqlBuilder likeNullable(String field, Object paramValue, MatchPattern pattern, int sqlType) {
-        return likeNullable(field, paramValue, pattern, sqlType, DEFAULT_SENSITIVE);
+    public AbstractSqlBuilder enableSpaceSkipping() {
+        enableSmartSpaceSkipping = true;
+        return this;
+    }
+    
+    public void add(Clause clause) {
+        clauses.add(clause);
+    }
+    
+    public ClauseList getClauseList() {
+        return clauses;
     }
     
     /**
-     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
-     *  
-     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
-     *  
-     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
-     *  like method without MatchPattern parameter.
-     *  
-     * @param field 字段
-     * @param paramValue 字段值
-     * @param pattern how DAL will append "%" for the input paramValue
-     * @param sensitive if the parameter will be replaced by "*" in the log output.
+     * If there is COMMA, then the leading space will not be appended.
+     * If there is bracket, then both leading and trailing space will be omitted.
+     * 
+     * @param clauseList
      * @return
      * @throws SQLException
      */
-    public AbstractSqlBuilder likeNullable(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) {
-        return addParamNullable(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
-    }
-
-	/**
-	 *  In操作，且字段值不能为NULL，否则会抛出SQLException
-	 * @param field 字段
-	 * @param paramValues 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder in(String field, List<?> paramValues, int sqlType) throws SQLException {
-		return in(field, paramValues, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder in(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-		if(null == paramValues || paramValues.size() == 0)
-			throw new SQLException(field + " must have more than one value.");
-
-		for(Object obj:paramValues)
-			if(obj==null)
-				throw new SQLException(field + " is not support null value.");
-
-		return addInParam(field, paramValues, sqlType, sensitive);
-	}
-	
-	/**
-	 *  In操作，允许参数为NULL，或者字段值为NULL, 或者传入的字段值数量为0。
-	 * @param field 字段
-	 * @param paramValues 字段值
-	 * @return
-	 * @throws SQLException
-	 */
-	public AbstractSqlBuilder inNullable(String field, List<?> paramValues, int sqlType) throws SQLException {
-		return inNullable(field, paramValues, sqlType, DEFAULT_SENSITIVE);
-	}
-	
-	public AbstractSqlBuilder inNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-		if(null == paramValues || paramValues.size() == 0){
-			return add(new NullValueClauseEntry());
-		}
-		
-		Iterator<?> ite = paramValues.iterator();
-		while(ite.hasNext()){
-			if(ite.next()==null){
-				ite.remove();
-			}
-		}
-		
-		if(paramValues.size() == 0){
-			return add(new NullValueClauseEntry());
-		}
-		
-		return addInParam(field, paramValues, sqlType, sensitive);
-	}
-	
-    /**
-     *  In操作，且字段值不能为NULL，否则会抛出SQLException
-     * @param field 字段
-     * @param paramValues 字段值
-     * @return
-     * @throws SQLException
-     */
-    public AbstractSqlBuilder notIn(String field, List<?> paramValues, int sqlType) throws SQLException {
-        return notIn(field, paramValues, sqlType, DEFAULT_SENSITIVE);
-    }
-    
-    public AbstractSqlBuilder notIn(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-        if(null == paramValues || paramValues.size() == 0)
-            throw new SQLException(field + " must have more than one value.");
-
-        for(Object obj:paramValues)
-            if(obj==null)
-                throw new SQLException(field + " is not support null value.");
-
-        return addNotInParam(field, paramValues, sqlType, sensitive);
-    }
-    
-    /**
-     *  In操作，允许参数为NULL，或者字段值为NULL, 或者传入的字段值数量为0。
-     * @param field 字段
-     * @param paramValues 字段值
-     * @return
-     * @throws SQLException
-     */
-    public AbstractSqlBuilder notInNullable(String field, List<?> paramValues, int sqlType) throws SQLException {
-        return notInNullable(field, paramValues, sqlType, DEFAULT_SENSITIVE);
-    }
-    
-    public AbstractSqlBuilder notInNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-        if(null == paramValues || paramValues.size() == 0){
-            return add(new NullValueClauseEntry());
+    private String concat(List<Clause> clauseList) throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < clauseList.size(); i ++) {
+            Clause curClause = clauseList.get(i);
+            Clause nextClause = (i == clauseList.size() - 1) ? null: clauseList.get(i+1);
+            
+            sb.append(curClause.build());
+            
+            if(skipSpaceInsertion(curClause, nextClause))
+                continue;
+            
+            sb.append(SPACE);
         }
         
-        Iterator<?> ite = paramValues.iterator();
-        while(ite.hasNext()){
-            if(ite.next()==null){
-                ite.remove();
+        return sb.toString().trim();
+    }
+    
+    private List<Clause> meltdown(List<Clause> clauseList) {
+        LinkedList<Clause> filtered = new LinkedList<>();
+        
+        for(Clause entry: clauseList) {
+            if(entry.isExpression() && entry.isNull()){
+                meltDownNullValue(filtered);
+                continue;
             }
+
+            if(entry.isBracket() && !entry.isLeft()){
+                if(meltDownRightBracket(filtered))
+                    continue;
+            }
+            
+            // AND/OR
+            if(entry.isOperator() && !entry.isNot()) {
+                if(meltDownAndOrOperator(filtered))
+                    continue;
+            }
+            
+            filtered.add(entry);
         }
         
-        if(paramValues.size() == 0){
-            return add(new NullValueClauseEntry());
-        }
-        
-        return addNotInParam(field, paramValues, sqlType, sensitive);
+        return filtered;
     }
     
     /**
-	 * Is null操作
-	 * @param field 字段
-	 * @return
-	 */
-	public AbstractSqlBuilder isNull(String field){
-		return add(new NullClauseEntry(field, true));
-	}
-	
-	/**
-	 * Is not null操作
-	 * @param field 字段
-	 * @return
-	 */
-	public AbstractSqlBuilder isNotNull(String field){
-		return add(new NullClauseEntry(field, false));
-	}
-	
-	/**
-	 * Add "("
-	 */
-	public AbstractSqlBuilder leftBracket(){
-		return add(BracketClauseEntry.leftBracket());
-	}
-	
-	/**
-	 * Add ")"
-	 */
-	public AbstractSqlBuilder rightBracket(){
-		return add(BracketClauseEntry.rightBracket());
-	}
+     * Builder will not insert space if enableSmartSpaceSkipping is enabled and:
+     * 1. current cuase is operator(AND, OR, NOT)
+     * 2. current cuase is left bracket
+     * 3. next clause is right bracket or COMMA
+     */
+    private boolean skipSpaceInsertion(Clause curClause, Clause nextClause) {
+        if(!enableSmartSpaceSkipping)
+            return false;
+        
+        if(curClause.isOperator())
+            return false;
+        // if after "("
+        if(curClause.isBracket() && curClause.isLeft())
+            return true;
+        
+        // reach the end
+        if(nextClause == null)
+            return true;
 
-	/**
-	 * Add "NOT"
-	 */
-	public AbstractSqlBuilder not(){
-		return add(new NotClauseEntry());
-	}
-	
-	private AbstractSqlBuilder addInParam(String field, List<?> paramValues, int sqlType, boolean sensitive){
-		return add(new InClauseEntry(field, paramValues, sqlType, sensitive, whereFieldEntrys, compatible));
-	}
-	
-    private AbstractSqlBuilder addNotInParam(String field, List<?> paramValues, int sqlType, boolean sensitive){
-        return add(new InClauseEntry(field, paramValues, sqlType, sensitive, whereFieldEntrys, compatible).setNotIn());
+        if(nextClause.isBracket() && !nextClause.isLeft())
+            return true;
+        
+        return nextClause.isComma();
     }
     
-	private AbstractSqlBuilder addParam(String field, String condition, Object paramValue, int sqlType, boolean sensitive) throws SQLException{
-		if(paramValue == null)
-			throw new SQLException(field + " is not support null value.");	
+    private void meltDownNullValue(LinkedList<Clause> filtered) {
+        if(filtered.isEmpty())
+            return;
 
-		return add(new SingleClauseEntry(field, condition, paramValue, sqlType, sensitive, whereFieldEntrys));
-	}
-	
-	private AbstractSqlBuilder addParamNullable(String field, String condition, Object paramValue, int sqlType, boolean sensitive){
-		if(paramValue == null)
-			return add(new NullValueClauseEntry());
-		
-		return add(new SingleClauseEntry(field, condition, paramValue, sqlType, sensitive, whereFieldEntrys));
-	}
-	
-	private String process(Object value, MatchPattern pattern) {
-	    if(value == null)
-	        return null;
-	    
-	    String valueStr = value instanceof String ? (String)value : value.toString();
-	    
-	    switch (pattern) {
-            case head:
-                return "%" + valueStr;
-            case tail:
-                return valueStr + "%";
-            case both:
-                return "%" + valueStr + "%";
-            case none:
-                return valueStr;
-            default:
-                throw new IllegalStateException("Not supported yet");
+        while(!filtered.isEmpty()) {
+            Clause entry = filtered.getLast();
+            // Remove any leading AND/OR/NOT (NOT is both operator and clause)
+            if(entry.isOperator()) {
+                filtered.removeLast();
+            }else
+                break;
         }
-	}
-	
-	private static abstract class WhereClauseEntry implements ClauseClassifier {
-		private String clause; 
-		
-		public boolean isExpression() {
-		    return true;
-		}
-		
-        public boolean isNull() {
-            return false;
-        }
+    }
 
-		public boolean isBracket() {
-			return false;
-		}
-		
-		public boolean isLeft() {
-		    return false;
-		}
-		
-        public boolean isOperator() {
-            return false;
+    private static boolean meltDownRightBracket(LinkedList<Clause> filtered) {
+        int bracketCount = 1;
+        while(!filtered.isEmpty()) {
+            Clause entry = filtered.getLast();
+            // One ")" only remove one "("
+            if(entry.isBracket() && entry.isLeft() && bracketCount == 1){
+                filtered.removeLast();
+                bracketCount--;
+            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (NOT is both operator and clause)
+                filtered.removeLast();
+            } else
+                break;
         }
         
-        public boolean isNot() {
-            return false;
-        }
-        
-		//To make it build late when DatabaseCategory is set
-		public abstract String getClause(DatabaseCategory dbCategory);
-		
-		public String toString() {
-			return clause;
-		}
-	}
-	
-	private static class NullValueClauseEntry extends WhereClauseEntry {
-		public boolean isNull() {
-			return true;
-		}
-		
-		public String getClause(DatabaseCategory dbCategory) {
-			return "";
-		}
-	}
-	
-	private static class SingleClauseEntry extends WhereClauseEntry {
-		private String condition;
-		private FieldEntry entry;
-		
-		public SingleClauseEntry(String field, String condition, Object paramValue, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys) {
-			this.condition = condition;
-			entry = new FieldEntry(field, paramValue, sqlType, sensitive);
-			whereFieldEntrys.add(entry);
-		}
-		
-		public String getClause(DatabaseCategory dbCategory) {
-			return String.format("%s %s ?", wrapField(dbCategory, entry.getFieldName()), condition);
-		}
-	}
-	
-	private static class BetweenClauseEntry extends WhereClauseEntry {
-		private FieldEntry entry1;
-		private FieldEntry entry2;
-		
-		public BetweenClauseEntry(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys) {
-			entry1 = new FieldEntry(field, paramValue1, sqlType, sensitive);
-			entry2 = new FieldEntry(field, paramValue2, sqlType, sensitive);
-			whereFieldEntrys.add(entry1);
-			whereFieldEntrys.add(entry2);
-		}
+        return bracketCount == 0? true : false;
+    }
 
-		public String getClause(DatabaseCategory dbCategory) {
-			return wrapField(dbCategory, entry1.getFieldName()) + " BETWEEN ? AND ?";
-		}
-	}
+    private static boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
+        // If it is the first element
+        if(filtered.isEmpty())
+            return true;
 
-	private static class InClauseEntry extends WhereClauseEntry {
-		private String field;
-		private String questionMarkList;
-		private boolean compatible;
-		private boolean isNot = false;
-		private static final String IN_CLAUSE = " in ( ? )";
-		private static final String NOT_IN_CLAUSE = " not in ( ? )";
-		private List<FieldEntry> entries;
-		
-		public InClauseEntry(String field, List<?> paramValues, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys, boolean compatible){
-			this.field = field;
-			this.compatible = compatible;
-			
-			if(compatible)
-				create(field, paramValues, sqlType, sensitive, whereFieldEntrys);
-			else{
-				whereFieldEntrys.add(new FieldEntry(field, paramValues, sqlType, sensitive).setInParam(true));
-			}
-		}
-		
-		public InClauseEntry setNotIn() {
-		    isNot = true;
-		    return this;
-		}
-		
-		private void create(String field, List<?> paramValues, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys){
-			StringBuilder temp = new StringBuilder();
-			temp.append(isNot ? " not in ( ":" in ( ");
-			
-			entries = new ArrayList<>(paramValues.size());
-			for(int i=0,size=paramValues.size();i<size;i++){
-				temp.append("?");
-				if(i!=size-1){
-					temp.append(", ");
-				}
-				FieldEntry entry = new FieldEntry(field, paramValues.get(i), sqlType, sensitive);
-				entries.add(entry);
-			}
-			temp.append(" )");
-			questionMarkList = temp.toString();
-			whereFieldEntrys.addAll(entries);
-		}
+        Clause entry = filtered.getLast();
 
-		public String getClause(DatabaseCategory dbCategory) {
-			return compatible ?
-					wrapField(dbCategory, field) + questionMarkList:
-						wrapField(dbCategory, field) + (isNot ? NOT_IN_CLAUSE:IN_CLAUSE);
-		}
-	}
-	
-	private static class NullClauseEntry extends WhereClauseEntry {
-		private String field;
-		private boolean isNull;
-		
-		public NullClauseEntry(String field, boolean isNull) {
-			this.field = field;
-			this.isNull=  isNull;
-		}
+        // If it is not a removable clause. Reach the beginning of the meltdown section
+        if(!entry.isExpression())
+            return true;
 
-		public String getClause(DatabaseCategory dbCategory) {
-			return wrapField(dbCategory, field) + (isNull ? " IS NULL" : " IS NOT NULL");		
-		}
-	}
-	
-	private static class NotClauseEntry extends WhereClauseEntry {
-		public NotClauseEntry() {
-		}
-		
-		public boolean isOperator() {
-			return true;
-		}
-		
-		
-        public boolean isNot() {
+        // The last one is "("
+        if(entry.isBracket() && entry.isLeft())
+            return true;
+            
+        // AND/OR/NOT AND/OR
+        if(entry.isOperator()) {
             return true;
         }
-        		
-		public String getClause(DatabaseCategory dbCategory) {
-			return "NOT";
-		}
-	}
-	
-	private static class OperatorClauseEntry extends WhereClauseEntry {
-		private String operator;
-		public OperatorClauseEntry(String operator) {
-			this.operator = operator;
-		}
-		
-		public String getClause(DatabaseCategory dbCategory) {
-			return operator;
-		}
-		
-        public boolean isExpression() {
-            return false;
-        }
         
-		@Override
-		public boolean isOperator() {
-			return true;
-		}
-		
-		static OperatorClauseEntry AND() {
-			return new OperatorClauseEntry("AND");
-		}
-
-		static OperatorClauseEntry OR() {
-			return new OperatorClauseEntry("OR");
-		}
-	}
-	
-	private static class BracketClauseEntry extends WhereClauseEntry {
-		private boolean left;
-		public BracketClauseEntry(boolean isLeft) {
-			left = isLeft;
-		}
-		
-		public String getClause(DatabaseCategory dbCategory) {
-			return left? "(" : ")";
-		}
-
-		public boolean isExpression() {
-            return false;
-        }
-		
-		public boolean isBracket() {
-			return true;
-		}
-
-		public boolean isLeft() {
-			return left;
-		}
-
-		static BracketClauseEntry leftBracket() {
-			return new BracketClauseEntry(true);
-		}
-
-		static BracketClauseEntry rightBracket() {
-			return new BracketClauseEntry(false);
-		}
-	}
-	
-	private AbstractSqlBuilder add(WhereClauseEntry entry) {
-		whereClauseEntries.add(entry);
-		return this;
-	}
+        return false;
+    }
 }

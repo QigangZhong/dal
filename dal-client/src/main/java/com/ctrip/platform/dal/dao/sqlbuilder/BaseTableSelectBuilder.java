@@ -186,7 +186,7 @@ public class BaseTableSelectBuilder implements TableSelectBuilder {
 	 * @return
 	 */
 	public String wrapField(String fieldName){
-		return AbstractSqlBuilder.wrapField(dbCategory, fieldName);
+		return AbstractTableSqlBuilder.wrapField(dbCategory, fieldName);
 	}
 	
 	@Override

@@ -1,11 +1,8 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrapField;
 
 import java.util.Objects;
-
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ClauseList;
 
 /**
  * A factory of static expression methods.
@@ -14,15 +11,17 @@ import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ClauseList;
  *
  */
 public class Expressions {
+    public static final NullClause NULL = new NullClause();
+    
     public static final Operator AND = new Operator("AND");
     
     public static final Operator OR = new Operator("OR");
     
     public static final Operator NOT = new Operator("NOT");
     
-    public static final Clause leftBracket = new Bracket(true);
+    public static final Bracket leftBracket = new Bracket(true);
 
-    public static final Clause rightBracket = new Bracket(false);
+    public static final Bracket rightBracket = new Bracket(false);
     
     public static Expression createColumnExpression(String template, String columnName) {
         return new ColumnExpression(template, columnName);
@@ -41,7 +40,7 @@ public class Expressions {
         return condition ? new Expression(template) : NULL;
     }
     
-    public static Clause expression(boolean condition, String template, String elseTemplate) {
+    public static Expression expression(boolean condition, String template, String elseTemplate) {
         return condition ? expression(template) : expression(elseTemplate);
     }
     
@@ -95,11 +94,11 @@ public class Expressions {
     }
     
     public static Expression isNull(String columnName) {
-        return createColumnExpression("%s IS NULL ?", columnName);
+        return createColumnExpression("%s IS NULL", columnName);
     }
     
     public static Expression isNotNull(String columnName) {
-        return createColumnExpression("%s IS NOT NULL ?", columnName);
+        return createColumnExpression("%s IS NOT NULL", columnName);
     }
     
     public static class Operator extends Clause {
@@ -195,12 +194,13 @@ public class Expressions {
             super("");
         }
         
+        public boolean isNull() {
+            return true;
+        }
+        
         @Override
         public String build() {
             return "";
         }
     }
-    
-    public static final Expression NULL = new NullClause();
-
 }

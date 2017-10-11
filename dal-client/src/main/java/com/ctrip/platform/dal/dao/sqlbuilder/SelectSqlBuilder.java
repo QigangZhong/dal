@@ -8,7 +8,7 @@ import com.ctrip.platform.dal.dao.DalResultSetExtractor;
 import com.ctrip.platform.dal.dao.DalRowMapper;
 import com.ctrip.platform.dal.dao.ResultMerger;
 
-public class SelectSqlBuilder extends AbstractSqlBuilder implements TableSelectBuilder {
+public class SelectSqlBuilder extends AbstractTableSqlBuilder implements TableSelectBuilder {
 	private BaseTableSelectBuilder queryBuilder;
 	
 	private boolean isPagination = false;
