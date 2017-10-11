@@ -4,6 +4,8 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
+
 /**
  * Parent of AbstractFreeSqlBuilder and AbstractTableSqlBuilder
  * 
@@ -106,18 +108,18 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         LinkedList<Clause> filtered = new LinkedList<>();
         
         for(Clause entry: clauseList) {
-            if(entry.isExpression() && entry.isNull()){
+            if(isExpression(entry) && isNull(entry)){
                 meltDownNullValue(filtered);
                 continue;
             }
 
-            if(entry.isBracket() && !entry.isLeft()){
+            if(isBracket(entry) && !isLeft(entry)){
                 if(meltDownRightBracket(filtered))
                     continue;
             }
             
             // AND/OR
-            if(entry.isOperator() && !entry.isNot()) {
+            if(isOperator(entry) && !isNot(entry)) {
                 if(meltDownAndOrOperator(filtered))
                     continue;
             }
@@ -138,20 +140,20 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         if(!enableSmartSpaceSkipping)
             return false;
         
-        if(curClause.isOperator())
+        if(isOperator(curClause))
             return false;
         // if after "("
-        if(curClause.isBracket() && curClause.isLeft())
+        if(isBracket(curClause) && isLeft(curClause))
             return true;
         
         // reach the end
         if(nextClause == null)
             return true;
 
-        if(nextClause.isBracket() && !nextClause.isLeft())
+        if(isBracket(nextClause) && !isLeft(nextClause))
             return true;
         
-        return nextClause.isComma();
+        return isComma(nextClause);
     }
     
     private void meltDownNullValue(LinkedList<Clause> filtered) {
@@ -161,22 +163,22 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         while(!filtered.isEmpty()) {
             Clause entry = filtered.getLast();
             // Remove any leading AND/OR/NOT (NOT is both operator and clause)
-            if(entry.isOperator()) {
+            if(isOperator(entry)) {
                 filtered.removeLast();
             }else
                 break;
         }
     }
 
-    private static boolean meltDownRightBracket(LinkedList<Clause> filtered) {
+    private boolean meltDownRightBracket(LinkedList<Clause> filtered) {
         int bracketCount = 1;
         while(!filtered.isEmpty()) {
             Clause entry = filtered.getLast();
             // One ")" only remove one "("
-            if(entry.isBracket() && entry.isLeft() && bracketCount == 1){
+            if(isBracket(entry) && isLeft(entry) && bracketCount == 1){
                 filtered.removeLast();
                 bracketCount--;
-            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (NOT is both operator and clause)
+            } else if(isOperator(entry)) {// Remove any leading AND/OR/NOT (NOT is both operator and clause)
                 filtered.removeLast();
             } else
                 break;
@@ -185,7 +187,7 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         return bracketCount == 0? true : false;
     }
 
-    private static boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
+    private boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
         // If it is the first element
         if(filtered.isEmpty())
             return true;
@@ -193,18 +195,67 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         Clause entry = filtered.getLast();
 
         // If it is not a removable clause. Reach the beginning of the meltdown section
-        if(!entry.isExpression())
+        if(!isExpression(entry))
             return true;
 
         // The last one is "("
-        if(entry.isBracket() && entry.isLeft())
+        if(isBracket(entry) && isLeft(entry))
             return true;
             
         // AND/OR/NOT AND/OR
-        if(entry.isOperator()) {
+        if(isOperator(entry)) {
             return true;
         }
         
         return false;
     }
+    /**
+     * @return if current clause is comma
+     */
+    private boolean isComma(Clause clause) {
+        return clause == AbstractFreeSqlBuilder.COMMA;
+    }
+
+    /**
+     * @return if current clause is an expression
+     */
+    private boolean isExpression(Clause clause) {
+        return clause instanceof Expressions.Expression;
+    }
+
+    /**
+     * @return if current clause is null
+     */
+    private boolean isNull(Clause clause) {
+        Expression exp = (Expression)clause;
+        return exp.isNull();
+    }
+    
+    /**
+     * @return if current clause is a bracket
+     */
+    private boolean isBracket(Clause clause) {
+        return clause instanceof Expressions.Bracket;
+    }
+    
+    /**
+     * @return if current clause is left bracket
+     */
+    private boolean isLeft(Clause clause) {
+        return clause == Expressions.leftBracket;
+    }
+    
+    /**
+     * @return if current clause is an operator
+     */
+    private boolean isOperator(Clause clause) {
+        return clause instanceof Expressions.Operator;
+    }
+    
+    /**
+     * @return if current clause is NOT operator
+     */
+    private boolean isNot(Clause clause) {
+        return clause == Expressions.NOT;
+    }    
 }

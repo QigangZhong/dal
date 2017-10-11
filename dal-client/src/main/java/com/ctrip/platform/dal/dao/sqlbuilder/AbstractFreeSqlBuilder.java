@@ -40,7 +40,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Builder will not insert space before COMMA.
      */
-    public static final Text COMMA = new Text(","){public boolean isComma(){return true;}};
+    public static final Text COMMA = text(",");
     
     public static final Text SPACE = text(" ");
     

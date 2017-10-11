@@ -8,16 +8,7 @@ import com.ctrip.platform.dal.dao.StatementParameters;
 
 
 /**
- * Base class for sql clause.
- * 
- * It classifies clause in the following aspects:
- * 
- * 1. if it is an expression and if the value is nyull
- * 2. if it is a bracket and if the bracket is lfet one
- * 3. if it is an operator and if the operator is NOT
- * 4. if it is a comma
- * 
- * The classification will help to do clause meltdown or space insertion.
+ * Base class for sql clause to build piece of the final statement.
  * 
  * Because certain information may not be ready during clause append,
  * the build process is separated into two phases. One is preparing: setBuilderCOntext(), this 
@@ -55,53 +46,4 @@ public abstract class Clause {
     public StatementParameters getParameters() {
         return context.getParameters();
     }
-
-    /**
-     * @return if current clause is comma
-     */
-    public boolean isComma() {
-        return false;
-    }
-
-    /**
-     * @return if current clause is an expression
-     */
-    public boolean isExpression() {
-        return false;
-    }
-
-    /**
-     * @return if current clause is null
-     */
-    public boolean isNull() {
-        return false;
-    }
-    
-    /**
-     * @return if current clause is a bracket
-     */
-    public boolean isBracket() {
-        return false;
-    }
-    
-    /**
-     * @return if current clause is left bracket
-     */
-    public boolean isLeft() {
-        return false;
-    }
-    
-    /**
-     * @return if current clause is an operator
-     */
-    public boolean isOperator() {
-        return false;
-    }
-    
-    /**
-     * @return if current clause is NOT operator
-     */
-    public boolean isNot() {
-        return false;
-    }    
 }

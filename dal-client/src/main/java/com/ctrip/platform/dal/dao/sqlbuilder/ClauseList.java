@@ -27,34 +27,6 @@ public class ClauseList extends Clause {
     public List<Clause> getList() {
         return list;
     }
-
-    public boolean isExpression() {
-        return false;
-    }
-
-    public boolean isNull() {
-        return false;
-    }
-
-    public boolean isBracket() {
-        return false;
-    }
-
-    public boolean isLeft() {
-        return false;
-    }
-
-    public boolean isOperator() {
-        return false;
-    }
-    
-    public boolean isNot() {
-        return false;
-    }
-    
-    public boolean isComma() {
-        return false;
-    }
     
     public ClauseList add(Clause... clauses) {
         for(Clause c: clauses) {

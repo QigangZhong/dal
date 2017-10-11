@@ -8,6 +8,7 @@ import java.util.List;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 /**
  * Sql builder for only one table
@@ -704,8 +705,12 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
         }
 	}
 	
-	private static abstract class ParameterizedExpression extends Clause {
-	    public boolean isExpression() {
+	private static abstract class ParameterizedExpression extends Expression {
+	    public ParameterizedExpression() {
+            super("");
+        }
+
+        public boolean isExpression() {
 	        return true;
 	    }
 	    
