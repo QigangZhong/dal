@@ -152,8 +152,8 @@ public class SelectSqlBuilderTest {
 				+ "AND `lessThanNullable1` <= ? "
 				+ "AND `like1` LIKE ? "
 				+ "AND `likeNullable1` LIKE ? "
-				+ "AND `notEqual1` != ? "
-				+ "AND `notEqualNullable1` != ? "
+				+ "AND `notEqual1` <> ? "
+				+ "AND `notEqualNullable1` <> ? "
 				+ "AND `inNullable2` in ( ? ) "
 				+ "AND `inNullable3` in ( ?, ? ) "
 				+ "AND `inNullable4` in ( ?, ? )";
@@ -303,8 +303,8 @@ public class SelectSqlBuilderTest {
 				+ "AND `lessThanNullable1` <= ? "
 				+ "AND `like1` LIKE ? "
 				+ "AND `likeNullable1` LIKE ? "
-				+ "AND `notEqual1` != ? "
-				+ "AND `notEqualNullable1` != ? "
+				+ "AND `notEqual1` <> ? "
+				+ "AND `notEqualNullable1` <> ? "
 				+ "AND `inNullable2` in ( ? ) "
 				+ "AND `inNullable3` in ( ? ) "
 				+ "AND `inNullable4` in ( ? )";

@@ -111,14 +111,6 @@ public class Expressions {
         public String build() {
             return operator;
         }
-        
-        public boolean isOperator() {
-            return true;
-        }
-        
-        public boolean isNot() {
-            return this == NOT;
-        }
     }
     
     public static class Bracket extends Clause {
@@ -131,10 +123,6 @@ public class Expressions {
             return left? "(" : ")";
         }
         
-        public boolean isBracket() {
-            return true;
-        }
-
         public boolean isLeft() {
             return left;
         }
@@ -151,10 +139,6 @@ public class Expressions {
         public Expression nullable(Object o) {
             nullValue = (o == null);
             return this;
-        }
-
-        public boolean isExpression() {
-            return true;
         }
         
         public boolean isNull() {
@@ -178,6 +162,10 @@ public class Expressions {
             this.columnName = columnName;
         }
         
+        public String getColumnName() {
+            return columnName;
+        }
+
         public String build() {
             String template = super.build();
             return columnName == null ? template : String.format(template, wrapField(getDbCategory(), columnName));

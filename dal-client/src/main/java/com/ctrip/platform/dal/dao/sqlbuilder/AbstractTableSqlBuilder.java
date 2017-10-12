@@ -1,5 +1,12 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.NOT;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.NULL;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.OR;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.leftBracket;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.rightBracket;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -8,6 +15,7 @@ import java.util.List;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.ColumnExpression;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 /**
@@ -132,7 +140,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	 * @return
 	 */
 	public AbstractTableSqlBuilder and(){
-		return addInternal(Expressions.AND);
+		return addInternal(AND);
 	}
 	
 	/**
@@ -140,7 +148,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	 * @return
 	 */
 	public AbstractTableSqlBuilder or(){
-	    return addInternal(Expressions.OR);
+	    return addInternal(OR);
 	}
 	
 	private static final boolean DEFAULT_SENSITIVE = false;
@@ -157,7 +165,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder equal(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "=", paramValue, sqlType, sensitive);
+		return addParam(Expressions.equal(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -172,7 +180,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder equalNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "=", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.equal(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -187,7 +195,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder notEqual(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "!=", paramValue, sqlType, sensitive);
+		return addParam(Expressions.notEqual(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -202,7 +210,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder notEqualNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "!=", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.notEqual(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -217,7 +225,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder greaterThan(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, ">", paramValue, sqlType, sensitive);
+		return addParam(Expressions.greaterThan(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -232,7 +240,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder greaterThanNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, ">", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.greaterThan(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -247,7 +255,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder greaterThanEquals(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, ">=", paramValue, sqlType, sensitive);
+		return addParam(Expressions.greaterThanEquals(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -262,7 +270,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder greaterThanEqualsNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, ">=", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.greaterThanEquals(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -277,7 +285,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder lessThan(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "<", paramValue, sqlType, sensitive);
+		return addParam(Expressions.lessThan(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -292,7 +300,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder lessThanNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "<", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.lessThan(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -307,7 +315,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder lessThanEquals(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "<=", paramValue, sqlType, sensitive);
+		return addParam(Expressions.lessThanEquals(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -322,7 +330,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder lessThanEqualsNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "<=", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.lessThanEquals(field), paramValue, sqlType, sensitive);
 	}
 
 	/**
@@ -341,7 +349,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 		if (paramValue1 == null || paramValue2 == null)
 			throw new SQLException(field + " is not support null value.");
 
-		return addInternal(new BetweenClauseEntry(field, paramValue1, paramValue2, sqlType, sensitive, whereFieldEntrys));
+		return addBetweenClause(field, paramValue1, paramValue2, sqlType, sensitive);
 	}
 	
 	/**
@@ -357,11 +365,17 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder betweenNullable(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive) {
-		//如果paramValue==null，则field不会作为条件加入到最终的SQL中。
-		if(paramValue1 == null || paramValue2 == null)
-			return addInternal(Expressions.NULL);
+	    if (paramValue1 == null || paramValue2 == null)
+	        return addInternal(NULL);
+	    
+		return addBetweenClause(field, paramValue1, paramValue2, sqlType, sensitive);
+	}
+	
+	private AbstractTableSqlBuilder addBetweenClause(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive) {
+        whereFieldEntrys.add(new FieldEntry(field, paramValue1, sqlType, sensitive));
+        whereFieldEntrys.add(new FieldEntry(field, paramValue2, sqlType, sensitive));
 
-		return addInternal(new BetweenClauseEntry(field, paramValue1, paramValue2, sqlType, sensitive, whereFieldEntrys));
+        return addInternal(Expressions.between(field));
 	}
 
 	/**
@@ -402,7 +416,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @Deprecated just a marker to catch your eye about the usage notification
      */
 	public AbstractTableSqlBuilder like(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
-		return addParam(field, "LIKE", paramValue, sqlType, sensitive);
+		return addParam(Expressions.like(field), paramValue, sqlType, sensitive);
 	}
 	
 	/**
@@ -443,7 +457,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @Deprecated just a marker to catch your eye about the usage notification
      */	
 	public AbstractTableSqlBuilder likeNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
-		return addParamNullable(field, "LIKE", paramValue, sqlType, sensitive);
+		return addParamNullable(Expressions.like(field), paramValue, sqlType, sensitive);
 	}
 
     /**
@@ -480,7 +494,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @throws SQLException
      */
     public AbstractTableSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) throws SQLException {
-        return addParam(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
+        return addParam(Expressions.like(field), process(paramValue, pattern), sqlType, sensitive);
     }
     
     /**
@@ -517,7 +531,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @throws SQLException
      */
     public AbstractTableSqlBuilder likeNullable(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) {
-        return addParamNullable(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
+        return addParamNullable(Expressions.like(field), process(paramValue, pattern), sqlType, sensitive);
     }
 
 	/**
@@ -555,7 +569,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	
 	public AbstractTableSqlBuilder inNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
 		if(null == paramValues || paramValues.size() == 0){
-			return addInternal(Expressions.NULL);
+			return addInternal(NULL);
 		}
 		
 		Iterator<?> ite = paramValues.iterator();
@@ -566,7 +580,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 		}
 		
 		if(paramValues.size() == 0){
-			return addInternal(Expressions.NULL);
+			return addInternal(NULL);
 		}
 		
 		return addInParam(field, paramValues, sqlType, sensitive);
@@ -607,7 +621,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
     
     public AbstractTableSqlBuilder notInNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
         if(null == paramValues || paramValues.size() == 0){
-            return addInternal(Expressions.NULL);
+            return addInternal(NULL);
         }
         
         Iterator<?> ite = paramValues.iterator();
@@ -618,7 +632,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
         }
         
         if(paramValues.size() == 0){
-            return addInternal(Expressions.NULL);
+            return addInternal(NULL);
         }
         
         return addNotInParam(field, paramValues, sqlType, sensitive);
@@ -646,21 +660,21 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	 * Add "("
 	 */
 	public AbstractTableSqlBuilder leftBracket(){
-		return addInternal(Expressions.leftBracket);
+		return addInternal(leftBracket);
 	}
 	
 	/**
 	 * Add ")"
 	 */
 	public AbstractTableSqlBuilder rightBracket(){
-		return addInternal(Expressions.rightBracket);
+		return addInternal(rightBracket);
 	}
 
 	/**
 	 * Add "NOT"
 	 */
 	public AbstractTableSqlBuilder not(){
-	    return addInternal(Expressions.NOT);
+	    return addInternal(NOT);
 	}
 	
 	private AbstractTableSqlBuilder addInParam(String field, List<?> paramValues, int sqlType, boolean sensitive){
@@ -671,18 +685,24 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
         return addInternal(new InClauseEntry(field, paramValues, sqlType, sensitive, whereFieldEntrys, compatible).setNotIn());
     }
     
-	private AbstractTableSqlBuilder addParam(String field, String condition, Object paramValue, int sqlType, boolean sensitive) throws SQLException{
+	private AbstractTableSqlBuilder addParam(Expression expr, Object paramValue, int sqlType, boolean sensitive) throws SQLException{
+	    ColumnExpression colExpr = (ColumnExpression )expr;
 		if(paramValue == null)
-			throw new SQLException(field + " is not support null value.");	
+			throw new SQLException(colExpr.getColumnName() + " is not support null value.");	
 
-		return addInternal(new SingleClauseEntry(field, condition, paramValue, sqlType, sensitive, whereFieldEntrys));
+		return addSingleClause(colExpr, paramValue, sqlType, sensitive);
 	}
 	
-	private AbstractTableSqlBuilder addParamNullable(String field, String condition, Object paramValue, int sqlType, boolean sensitive){
+	private AbstractTableSqlBuilder addParamNullable(Expression expr, Object paramValue, int sqlType, boolean sensitive){
 		if(paramValue == null)
-			return addInternal(Expressions.NULL);
+			return addInternal(NULL);
 		
-		return addInternal(new SingleClauseEntry(field, condition, paramValue, sqlType, sensitive, whereFieldEntrys));
+		return addSingleClause((ColumnExpression)expr, paramValue, sqlType, sensitive);
+	}
+	
+	private AbstractTableSqlBuilder addSingleClause(ColumnExpression expr, Object paramValue, int sqlType, boolean sensitive){
+        whereFieldEntrys.add(new FieldEntry(expr.getColumnName(), paramValue, sqlType, sensitive));
+        return addInternal(expr);
 	}
 	
 	private String process(Object value, MatchPattern pattern) {
@@ -705,52 +725,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
         }
 	}
 	
-	private static abstract class ParameterizedExpression extends Expression {
-	    public ParameterizedExpression() {
-            super("");
-        }
-
-        public boolean isExpression() {
-	        return true;
-	    }
-	    
-	    public String wrap(String field) {
-	        return wrapField(getDbCategory(), field);
-	    }
-	}
-	
-	private static class SingleClauseEntry extends ParameterizedExpression {
-		private String condition;
-		private FieldEntry entry;
-		
-		public SingleClauseEntry(String field, String condition, Object paramValue, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys) {
-			this.condition = condition;
-			entry = new FieldEntry(field, paramValue, sqlType, sensitive);
-			whereFieldEntrys.add(entry);
-		}
-		
-		public String build() {
-			return String.format("%s %s ?", wrap(entry.getFieldName()), condition);
-		}
-	}
-	
-	private static class BetweenClauseEntry extends ParameterizedExpression {
-		private FieldEntry entry1;
-		private FieldEntry entry2;
-		
-		public BetweenClauseEntry(String field, Object paramValue1, Object paramValue2, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys) {
-			entry1 = new FieldEntry(field, paramValue1, sqlType, sensitive);
-			entry2 = new FieldEntry(field, paramValue2, sqlType, sensitive);
-			whereFieldEntrys.add(entry1);
-			whereFieldEntrys.add(entry2);
-		}
-
-		public String build() {
-			return wrap(entry1.getFieldName()) + " BETWEEN ? AND ?";
-		}
-	}
-
-	private static class InClauseEntry extends ParameterizedExpression {
+	private static class InClauseEntry extends Expression {
 		private String field;
 		private String questionMarkList;
 		private boolean compatible;
@@ -760,6 +735,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 		private List<FieldEntry> entries;
 		
 		public InClauseEntry(String field, List<?> paramValues, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys, boolean compatible){
+		    super("");
 			this.field = field;
 			this.compatible = compatible;
 			
@@ -792,6 +768,10 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 			questionMarkList = temp.toString();
 			whereFieldEntrys.addAll(entries);
 		}
+		
+		private String wrap(String field) {
+            return wrapField(getDbCategory(), field);
+        }
 
 		public String build() {
 			return compatible ?

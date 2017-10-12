@@ -702,11 +702,15 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @author jhhe
      *
      */
-    private static class SqlServerWithNoLock extends Clause {
+    private static class SqlServerWithNoLock extends Text {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
         
-        public String build() throws SQLException {
-            return getDbCategory() == DatabaseCategory.SqlServer ? SQL_SERVER_NOLOCK : EMPTY;
+        public SqlServerWithNoLock() {
+            super(SQL_SERVER_NOLOCK);
+        }
+
+        public String build() {
+            return getDbCategory() == DatabaseCategory.SqlServer ? super.build() : EMPTY;
         }
     }
 }
