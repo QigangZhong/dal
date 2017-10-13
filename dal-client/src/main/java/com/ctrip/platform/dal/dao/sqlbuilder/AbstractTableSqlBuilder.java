@@ -26,8 +26,6 @@ import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
  */
 public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder implements TableSqlBuilder {
 	
-	protected StatementParameters parameters = new StatementParameters();
-	
 	protected int index = 1;
 	
 	protected List<FieldEntry> selectOrUpdataFieldEntrys =  new ArrayList<FieldEntry>();
@@ -39,6 +37,8 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
     public AbstractTableSqlBuilder() {
         super(new BuilderContext());
         getContext().setDbCategory(DatabaseCategory.MySql);
+        getContext().setParameters(new StatementParameters());
+        
         // We disable space insertion by default to make sql like before?
         disableSpaceSkipping();
     }
@@ -79,7 +79,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	 * @return
 	 */
 	public StatementParameters buildParameters(){
-		parameters = new StatementParameters();
+	    StatementParameters parameters = new StatementParameters();
 		index = 1;
 		for(FieldEntry entry : selectOrUpdataFieldEntrys) {
 			parameters.add(new StatementParameter(index++, entry.getSqlType(), entry.getParamValue()).setSensitive(entry.isSensitive()).setName(entry.getFieldName()).setInParam(entry.isInParam()));
@@ -87,7 +87,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 		for(FieldEntry entry : whereFieldEntrys){
 			parameters.add(new StatementParameter(index++, entry.getSqlType(), entry.getParamValue()).setSensitive(entry.isSensitive()).setName(entry.getFieldName()).setInParam(entry.isInParam()));
 		}
-		return this.parameters;
+		return parameters;
 	}
 	
 	/**

@@ -75,10 +75,6 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         return this;
     }
     
-    public DatabaseCategory getDbCategory() {
-        return context.getDbCategory();
-    }
-    
     /**
      * If you already set logic db name, then you don't need to set this.
      *  

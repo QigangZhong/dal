@@ -6,12 +6,11 @@ import java.util.Map;
 
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.helper.DalDefaultJpaParser;
-import com.ctrip.platform.dal.dao.sqlbuilder.BaseTableSelectBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.DeleteSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.FreeUpdateSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.InsertSqlBuilder;
+import com.ctrip.platform.dal.dao.sqlbuilder.SelectSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.SqlBuilder;
-import com.ctrip.platform.dal.dao.sqlbuilder.TableSelectBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.TableSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.UpdateSqlBuilder;
 import com.ctrip.platform.dal.dao.task.BulkTask;
@@ -123,7 +122,7 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 		StatementParameters parameters = new StatementParameters();
 		parameters.set(1, parser.getPrimaryKeyNames()[0], getColumnType(parser.getPrimaryKeyNames()[0]), id);
 
-		return queryObject(new BaseTableSelectBuilder(rawTableName, dbCategory).where(pkSql).with(parameters).requireSingle().nullable(), hints);
+		return queryObject(new SelectSqlBuilder().where(pkSql).with(parameters).requireSingle().nullable(), hints);
 	}
 	
 	/**
@@ -138,7 +137,7 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 		StatementParameters parameters = new StatementParameters();
 		addParameters(parameters, parser.getPrimaryKeys(pk));
 
-		return queryObject(new BaseTableSelectBuilder(rawTableName, dbCategory).where(pkSql).with(parameters).requireSingle().nullable(), hints.setFields(parser.getFields(pk)));
+		return queryObject(new SelectSqlBuilder().where(pkSql).with(parameters).requireSingle().nullable(), hints.setFields(parser.getFields(pk)));
 	}
 
 	/**
@@ -173,7 +172,7 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 */
 	public List<T> query(String whereClause, StatementParameters parameters,
 			DalHints hints) throws SQLException {
-		return query(new BaseTableSelectBuilder(rawTableName, dbCategory).where(whereClause).with(parameters), hints);
+		return query(new SelectSqlBuilder().where(whereClause).with(parameters), hints);
 	}
 
 	/**
@@ -187,8 +186,8 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @return List of pojos that meet the search criteria
 	 * @throws SQLException
 	 */
-	public List<T> query(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
-		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(parser).nullable(), hints);
+	public List<T> query(SelectSqlBuilder selectBuilder, DalHints hints) throws SQLException {
+		return commonQuery(selectBuilder.mapWith(parser).nullable(), hints);
 	}
 
 	/**
@@ -203,8 +202,8 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @return List of pojos that meet the search criteria
 	 * @throws SQLException
 	 */
-	public <K> List<K> query(TableSelectBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
-		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(clazz).nullable(), hints);
+	public <K> List<K> query(SelectSqlBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
+		return commonQuery((SelectSqlBuilder)selectBuilder.mapWith(clazz).nullable(), hints);
 	}
 
 	/**
@@ -220,7 +219,7 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 */
 	public T queryFirst(String whereClause, StatementParameters parameters,
 			DalHints hints) throws SQLException {
-		return queryObject(new BaseTableSelectBuilder(rawTableName, dbCategory).where(whereClause).with(parameters).requireFirst().nullable(), hints);
+		return queryObject(new SelectSqlBuilder().where(whereClause).with(parameters).requireFirst().nullable(), hints);
 	}
 
 	/**
@@ -230,8 +229,8 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @return
 	 * @throws SQLException
 	 */
-	public T queryObject(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
-		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(parser), hints);
+	public T queryObject(SelectSqlBuilder selectBuilder, DalHints hints) throws SQLException {
+		return commonQuery(selectBuilder.mapWith(parser), hints);
 	}
 	
 	/**
@@ -242,16 +241,16 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @return
 	 * @throws SQLException
 	 */
-	public <K> K queryObject(TableSelectBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
-		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(clazz), hints);
+	public <K> K queryObject(SelectSqlBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
+		return commonQuery((SelectSqlBuilder)selectBuilder.mapWith(clazz), hints);
 	}
 
 	public Number count(String whereClause, StatementParameters parameters, DalHints hints) throws SQLException {
-		return count(new BaseTableSelectBuilder(rawTableName, dbCategory).where(whereClause).with(parameters).selectCount(), hints);
+		return count(new SelectSqlBuilder().where(whereClause).with(parameters).selectCount(), hints);
 	}
 	
 	//Assume selectCount() is already invoked
-	public Number count(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
+	public Number count(SelectSqlBuilder selectBuilder, DalHints hints) throws SQLException {
 		return commonQuery(selectBuilder, hints);
 	}
 
@@ -270,7 +269,7 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 */
 	public List<T> queryTop(String whereClause, StatementParameters parameters,
 			DalHints hints, int count) throws SQLException {
-		return query(new BaseTableSelectBuilder(rawTableName, dbCategory).where(whereClause).with(parameters).top(count), hints);
+		return query(new SelectSqlBuilder().where(whereClause).with(parameters).top(count), hints);
 	}
 
 	/**
@@ -291,10 +290,10 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	public List<T> queryFrom(String whereClause,
 			StatementParameters parameters, DalHints hints, int start, int count)
 			throws SQLException {
-		return query(new BaseTableSelectBuilder().where(whereClause).with(parameters).range(start, count), hints);
+		return query(new SelectSqlBuilder().where(whereClause).with(parameters).range(start, count), hints);
 	}
 
-	private <K> K commonQuery(TableSelectBuilder builder, DalHints hints) throws SQLException {
+	private <K> K commonQuery(SelectSqlBuilder builder, DalHints hints) throws SQLException {
 		DalSqlTaskRequest<K> request = new DalSqlTaskRequest<K>(
 				logicDbName, populate(builder), hints, 
 				new QuerySqlTask<>((DalResultSetExtractor<K>)builder.getResultExtractor(hints)), (ResultMerger<K>)builder.getResultMerger(hints));

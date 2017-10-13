@@ -4,6 +4,8 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.ctrip.platform.dal.common.enums.DatabaseCategory;
+import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 /**
@@ -24,8 +26,20 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         this.context = context;
     }
     
-    public BuilderContext getContext() {
+    protected BuilderContext getContext() {
         return context;
+    }
+    
+    protected DatabaseCategory getDbCategory() {
+        return context.getDbCategory();
+    }
+    
+    protected void setParameters(StatementParameters parameters) {
+        context.setParameters(parameters);
+    }
+
+    protected StatementParameters getParameters() {
+        return context.getParameters();
     }
 
     /**
