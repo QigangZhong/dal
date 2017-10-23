@@ -209,17 +209,13 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         Clause entry = filtered.getLast();
 
         // The last one is "("
-        if(isBracket(entry) && isLeft(entry))
-            return true;
+        if(isBracket(entry))
+            return isLeft(entry);
             
         // AND/OR/NOT AND/OR
         if(isOperator(entry)) {
             return true;
         }
-        
-        // The last one is ")"
-        if(isBracket(entry) && !isLeft(entry))
-            return false;
         
         // If it is expression. 
         if(isExpression(entry))
