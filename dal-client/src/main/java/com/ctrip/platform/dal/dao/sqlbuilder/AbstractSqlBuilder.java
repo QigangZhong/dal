@@ -208,14 +208,6 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
 
         Clause entry = filtered.getLast();
 
-        // The last one is ")"
-        if(isBracket(entry) && !isLeft(entry))
-            return false;
-        
-        // If it is not a removable clause. Reach the beginning of the meltdown section
-        if(!isExpression(entry))
-            return true;
-
         // The last one is "("
         if(isBracket(entry) && isLeft(entry))
             return true;
@@ -225,7 +217,16 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
             return true;
         }
         
-        return false;
+        // The last one is ")"
+        if(isBracket(entry) && !isLeft(entry))
+            return false;
+        
+        // If it is expression. 
+        if(isExpression(entry))
+            return false;
+
+        // Reach the beginning of the meltdown section
+        return true;
     }
     /**
      * @return if current clause is comma
