@@ -87,6 +87,56 @@ public class AbstractFreeSqlBuilderMeltdownWithSpaceSkipDisabledTest {
     }
     
     @Test
+    public void testIn() throws SQLException {
+        validate("in", "[a] IN ( ? )");
+        validate("in AND in", "[a] IN ( ? ) AND [a] IN ( ? )");
+        
+        validate("inNull AND in", "[a] IN ( ? )");
+        validate("in AND inNull", "[a] IN ( ? )");
+        
+        validate("in AND inNull OR in AND inNull", "[a] IN ( ? ) OR [a] IN ( ? )");
+        
+        validate("in AND inNull OR in AND inNull AND in OR inNull", "[a] IN ( ? ) OR [a] IN ( ? ) AND [a] IN ( ? )");
+        
+        validate("( in AND inNull ) OR ( in AND inNull AND in OR inNull OR in )", "( [a] IN ( ? ) ) OR ( [a] IN ( ? ) AND [a] IN ( ? ) OR [a] IN ( ? ) )");
+
+        validate("( in ) OR ( in )", "( [a] IN ( ? ) ) OR ( [a] IN ( ? ) )");
+        
+        validate("( ( in ) OR in ) OR ( in OR ( in ) )", "( ( [a] IN ( ? ) ) OR [a] IN ( ? ) ) OR ( [a] IN ( ? ) OR ( [a] IN ( ? ) ) )");
+
+        validate("( ( in ) OR in AND inNull ) OR ( in OR ( in ) )", "( ( [a] IN ( ? ) ) OR [a] IN ( ? ) ) OR ( [a] IN ( ? ) OR ( [a] IN ( ? ) ) )");
+
+        validate("( ( ( in ) OR in AND inNull ) OR ( in OR ( in ) ) )", "( ( ( [a] IN ( ? ) ) OR [a] IN ( ? ) ) OR ( [a] IN ( ? ) OR ( [a] IN ( ? ) ) ) )");
+
+        validate("( ( ( in ) OR in AND inNull ) OR ( ( in OR ( in ) ) ) )", "( ( ( [a] IN ( ? ) ) OR [a] IN ( ? ) ) OR ( ( [a] IN ( ? ) OR ( [a] IN ( ? ) ) ) ) )");
+    }
+    
+    @Test
+    public void testNotIn() throws SQLException {
+        validate("notIn", "[a] NOT IN ( ? )");
+        validate("notIn AND notIn", "[a] NOT IN ( ? ) AND [a] NOT IN ( ? )");
+        
+        validate("notInNull AND notIn", "[a] NOT IN ( ? )");
+        validate("notIn AND notInNull", "[a] NOT IN ( ? )");
+        
+        validate("notIn AND notInNull OR notIn AND notInNull", "[a] NOT IN ( ? ) OR [a] NOT IN ( ? )");
+        
+        validate("notIn AND notInNull OR notIn AND notInNull AND notIn OR notInNull", "[a] NOT IN ( ? ) OR [a] NOT IN ( ? ) AND [a] NOT IN ( ? )");
+        
+        validate("( notIn AND notInNull ) OR ( notIn AND notInNull AND notIn OR notInNull OR notIn )", "( [a] NOT IN ( ? ) ) OR ( [a] NOT IN ( ? ) AND [a] NOT IN ( ? ) OR [a] NOT IN ( ? ) )");
+
+        validate("( notIn ) OR ( notIn )", "( [a] NOT IN ( ? ) ) OR ( [a] NOT IN ( ? ) )");
+        
+        validate("( ( notIn ) OR notIn ) OR ( notIn OR ( notIn ) )", "( ( [a] NOT IN ( ? ) ) OR [a] NOT IN ( ? ) ) OR ( [a] NOT IN ( ? ) OR ( [a] NOT IN ( ? ) ) )");
+
+        validate("( ( notIn ) OR notIn AND notInNull ) OR ( notIn OR ( notIn ) )", "( ( [a] NOT IN ( ? ) ) OR [a] NOT IN ( ? ) ) OR ( [a] NOT IN ( ? ) OR ( [a] NOT IN ( ? ) ) )");
+
+        validate("( ( ( notIn ) OR notIn AND notInNull ) OR ( notIn OR ( notIn ) ) )", "( ( ( [a] NOT IN ( ? ) ) OR [a] NOT IN ( ? ) ) OR ( [a] NOT IN ( ? ) OR ( [a] NOT IN ( ? ) ) ) )");
+
+        validate("( ( ( notIn ) OR notIn AND notInNull ) OR ( ( notIn OR ( notIn ) ) ) )", "( ( ( [a] NOT IN ( ? ) ) OR [a] NOT IN ( ? ) ) OR ( ( [a] NOT IN ( ? ) OR ( [a] NOT IN ( ? ) ) ) ) )");
+    }
+    
+    @Test
     public void testNot() throws SQLException {
         validate("NOT equal", "NOT [a] = ?");
         validate("NOT equalNull", "");
@@ -149,14 +199,19 @@ public class AbstractFreeSqlBuilderMeltdownWithSpaceSkipDisabledTest {
                     builder.isNotNull("a");
                     break;
                 case "in":
-                    List<?> l = new ArrayList<>();
                     builder.in("a");
                     break;
-                case "between":
-                    builder.between("a");
+                case "notIn":
+                    builder.notIn("a");
                     break;
                 case "inNull":
                     builder.in("a").nullable(null);
+                    break;
+                case "notInNull":
+                    builder.notIn("a").nullable(null);
+                    break;
+                case "between":
+                    builder.between("a");
                     break;
                 case "betweenNull":
                     builder.between("a").nullable(null);

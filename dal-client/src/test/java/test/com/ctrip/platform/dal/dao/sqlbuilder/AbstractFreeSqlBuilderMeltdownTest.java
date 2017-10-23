@@ -96,20 +96,41 @@ public class AbstractFreeSqlBuilderMeltdownTest {
         validate("in AND inNull OR in AND inNull AND in OR inNull", "[a] IN ( ? ) OR [a] IN ( ? ) AND [a] IN ( ? )");
         
         validate("( in AND inNull ) OR ( in AND inNull AND in OR inNull OR in )", "([a] IN ( ? )) OR ([a] IN ( ? ) AND [a] IN ( ? ) OR [a] IN ( ? ))");
-    }
-    
-    @Test
-    public void testIn2() throws SQLException {
+
         validate("( in ) OR ( in )", "([a] IN ( ? )) OR ([a] IN ( ? ))");
+        
+        validate("( ( in ) OR in ) OR ( in OR ( in ) )", "(([a] IN ( ? )) OR [a] IN ( ? )) OR ([a] IN ( ? ) OR ([a] IN ( ? )))");
+
+        validate("( ( in ) OR in AND inNull ) OR ( in OR ( in ) )", "(([a] IN ( ? )) OR [a] IN ( ? )) OR ([a] IN ( ? ) OR ([a] IN ( ? )))");
+
+        validate("( ( ( in ) OR in AND inNull ) OR ( in OR ( in ) ) )", "((([a] IN ( ? )) OR [a] IN ( ? )) OR ([a] IN ( ? ) OR ([a] IN ( ? ))))");
+
+        validate("( ( ( in ) OR in AND inNull ) OR ( ( in OR ( in ) ) ) )", "((([a] IN ( ? )) OR [a] IN ( ? )) OR (([a] IN ( ? ) OR ([a] IN ( ? )))))");
     }
     
     @Test
     public void testNotIn() throws SQLException {
-        validate("isNotNull", "[a] IS NOT NULL");
-        validate("isNotNull AND isNotNull", "[a] IS NOT NULL AND [a] IS NOT NULL");
+        validate("notIn", "[a] NOT IN ( ? )");
+        validate("notIn AND notIn", "[a] NOT IN ( ? ) AND [a] NOT IN ( ? )");
         
-        validate("( isNotNull )", "([a] IS NOT NULL)");
-        validate("( isNotNull AND isNotNull )", "([a] IS NOT NULL AND [a] IS NOT NULL)");
+        validate("notInNull AND notIn", "[a] NOT IN ( ? )");
+        validate("notIn AND notInNull", "[a] NOT IN ( ? )");
+        
+        validate("notIn AND notInNull OR notIn AND notInNull", "[a] NOT IN ( ? ) OR [a] NOT IN ( ? )");
+        
+        validate("notIn AND notInNull OR notIn AND notInNull AND notIn OR notInNull", "[a] NOT IN ( ? ) OR [a] NOT IN ( ? ) AND [a] NOT IN ( ? )");
+        
+        validate("( notIn AND notInNull ) OR ( notIn AND notInNull AND notIn OR notInNull OR notIn )", "([a] NOT IN ( ? )) OR ([a] NOT IN ( ? ) AND [a] NOT IN ( ? ) OR [a] NOT IN ( ? ))");
+
+        validate("( notIn ) OR ( notIn )", "([a] NOT IN ( ? )) OR ([a] NOT IN ( ? ))");
+        
+        validate("( ( notIn ) OR notIn ) OR ( notIn OR ( notIn ) )", "(([a] NOT IN ( ? )) OR [a] NOT IN ( ? )) OR ([a] NOT IN ( ? ) OR ([a] NOT IN ( ? )))");
+
+        validate("( ( notIn ) OR notIn AND notInNull ) OR ( notIn OR ( notIn ) )", "(([a] NOT IN ( ? )) OR [a] NOT IN ( ? )) OR ([a] NOT IN ( ? ) OR ([a] NOT IN ( ? )))");
+
+        validate("( ( ( notIn ) OR notIn AND notInNull ) OR ( notIn OR ( notIn ) ) )", "((([a] NOT IN ( ? )) OR [a] NOT IN ( ? )) OR ([a] NOT IN ( ? ) OR ([a] NOT IN ( ? ))))");
+
+        validate("( ( ( notIn ) OR notIn AND notInNull ) OR ( ( notIn OR ( notIn ) ) ) )", "((([a] NOT IN ( ? )) OR [a] NOT IN ( ? )) OR (([a] NOT IN ( ? ) OR ([a] NOT IN ( ? )))))");
     }
     
     @Test
@@ -179,14 +200,14 @@ public class AbstractFreeSqlBuilderMeltdownTest {
                 case "notIn":
                     builder.notIn("a");
                     break;
-                case "between":
-                    builder.between("a");
-                    break;
                 case "inNull":
                     builder.in("a").nullable(null);
                     break;
                 case "notInNull":
                     builder.notIn("a").nullable(null);
+                    break;
+                case "between":
+                    builder.between("a");
                     break;
                 case "betweenNull":
                     builder.between("a").nullable(null);
