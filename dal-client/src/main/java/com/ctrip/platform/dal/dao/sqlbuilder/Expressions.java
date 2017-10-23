@@ -86,11 +86,11 @@ public class Expressions {
     }
     
     public static Expression in(String columnName) {
-        return createColumnExpression("%s IN(?)", columnName);
+        return createColumnExpression("%s IN ( ? )", columnName);
     }
     
     public static Expression notIn(String columnName) {
-        return createColumnExpression("%s NOT IN(?)", columnName);
+        return createColumnExpression("%s NOT IN ( ? )", columnName);
     }
     
     public static Expression isNull(String columnName) {

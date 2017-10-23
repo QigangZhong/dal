@@ -185,7 +185,7 @@ public class ExpressionsTest {
         Clause test = in(template);
         setEnv(test);
 
-        assertEquals(wrappedTemplate + " IN(?)", test.build());
+        assertEquals(wrappedTemplate + " IN ( ? )", test.build());
     }
     
     @Test
@@ -193,7 +193,7 @@ public class ExpressionsTest {
         Clause test = notIn(template);
         setEnv(test);
 
-        assertEquals(wrappedTemplate + " NOT IN(?)", test.build());
+        assertEquals(wrappedTemplate + " NOT IN ( ? )", test.build());
     }
     
     private void setEnv(Clause test) {

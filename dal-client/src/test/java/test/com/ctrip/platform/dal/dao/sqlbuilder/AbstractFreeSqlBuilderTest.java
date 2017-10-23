@@ -487,7 +487,7 @@ public class AbstractFreeSqlBuilderTest {
         test.in(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " IN(?)", test.build());
+        assertEquals(wrappedTemplate + " IN ( ? )", test.build());
     }
     
     @Test
@@ -496,7 +496,7 @@ public class AbstractFreeSqlBuilderTest {
         test.notIn(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " NOT IN(?)", test.build());
+        assertEquals(wrappedTemplate + " NOT IN ( ? )", test.build());
     }
     
     @Test
