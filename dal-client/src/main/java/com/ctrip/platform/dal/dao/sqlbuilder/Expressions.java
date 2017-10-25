@@ -130,24 +130,29 @@ public class Expressions {
     
     public static class Expression extends Clause {
         private String template;
-        private boolean nullValue = false;
+        private boolean inValid = false;
         
         public Expression(String template) {
             this.template = template;
         }
         
         public Expression nullable(Object o) {
-            nullValue = (o == null);
+            when(o != null);
             return this;
         }
         
-        public boolean isNull() {
-            return nullValue;
+        public Expression when(Boolean condition) {
+            inValid = !condition;
+            return this;
+        }
+        
+        public boolean isInValid() {
+            return inValid;
         }
         
         public String build() {
-            if(nullValue)
-                throw new IllegalStateException("Null expression should not be removed instead of build");
+            if(inValid)
+                throw new IllegalStateException("This expression is invalid and should be removed instead of build");
             
             return template;
         }
@@ -182,7 +187,7 @@ public class Expressions {
             super("");
         }
         
-        public boolean isNull() {
+        public boolean isInValid() {
             return true;
         }
         

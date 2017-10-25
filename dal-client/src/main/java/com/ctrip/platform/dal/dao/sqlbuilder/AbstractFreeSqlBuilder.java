@@ -459,7 +459,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * Set last expression in builder as nuallable and check against given value.
+     * Mark last expression as valid expression that is to be used in builder when value is not null.
      * @param value
      * @return
      */
@@ -473,6 +473,27 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         
         if(last instanceof Expression) {
             ((Expression)last).nullable(value);
+            return this;
+        }
+        
+        throw new IllegalStateException("The last sql segement is not an expression.");
+    }
+
+    /**
+     * Mark last expression as valid expression that is to be used in builder when the condition is met.
+     * @param value
+     * @return
+     */
+    public AbstractFreeSqlBuilder when(Boolean condition) {
+        List<Clause> list = getClauseList().getList();
+        
+        if(list.isEmpty())
+            throw new IllegalStateException("There is no exitsing sql segement.");
+        
+        Clause last = list.get(list.size() - 1);
+        
+        if(last instanceof Expression) {
+            ((Expression)last).when(condition);
             return this;
         }
         

@@ -389,7 +389,7 @@ public class AbstractFreeSqlBuilderTest {
         test = createDisabled();
         Expression exp = new Expression(expression);
         test.append(template).append(exp).nullable(null);
-        assertTrue(exp.isNull());
+        assertTrue(exp.isInValid());
         
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());

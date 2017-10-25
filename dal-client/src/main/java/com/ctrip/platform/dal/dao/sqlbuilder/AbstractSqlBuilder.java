@@ -243,7 +243,7 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
      */
     private boolean isNull(Clause clause) {
         Expression exp = (Expression)clause;
-        return exp.isNull();
+        return exp.isInValid();
     }
     
     /**
