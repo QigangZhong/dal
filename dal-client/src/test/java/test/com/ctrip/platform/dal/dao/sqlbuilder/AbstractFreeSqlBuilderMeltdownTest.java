@@ -180,13 +180,13 @@ public class AbstractFreeSqlBuilderMeltdownTest {
                     builder.equal("a");
                     break;
                 case "equalNull":
-                    builder.equal("a").nullable(null);
+                    builder.equal("a").when(false);
                     break;
                 case "like":
                     builder.like("a");
                     break;
                 case "likeNull":
-                    builder.like("a").nullable(null);
+                    builder.like("a").when(false);
                     break;
                 case "isNull":
                     builder.isNull("a");
@@ -201,16 +201,16 @@ public class AbstractFreeSqlBuilderMeltdownTest {
                     builder.notIn("a");
                     break;
                 case "inNull":
-                    builder.in("a").nullable(null);
+                    builder.in("a").when(false);
                     break;
                 case "notInNull":
-                    builder.notIn("a").nullable(null);
+                    builder.notIn("a").when(false);
                     break;
                 case "between":
                     builder.between("a");
                     break;
                 case "betweenNull":
-                    builder.between("a").nullable(null);
+                    builder.between("a").when(false);
                     break;
                 case "AND":
                     builder.and();
