@@ -1,5 +1,8 @@
 package test.com.ctrip.platform.dal.dao.shard;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.like;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -23,6 +26,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
@@ -42,6 +46,7 @@ import com.ctrip.platform.dal.dao.sqlbuilder.FreeSelectSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.MultipleSqlBuilder;
 
 public abstract class DalQueryDaoTest {
+    private String logicDbName;
 	private DatabaseCategory dbCategory;
 	private DalQueryDao dao;
 	private final static String TABLE_NAME = "dal_client_test";
@@ -49,6 +54,7 @@ public abstract class DalQueryDaoTest {
 	public DalQueryDaoTest(String DATABASE_NAME, DatabaseCategory dbCategory){
 		this.dbCategory = dbCategory;
 		dao = new DalQueryDao(DATABASE_NAME);
+		logicDbName = DATABASE_NAME;
 	}
 	
 	public abstract void insertBack();
@@ -125,6 +131,47 @@ public abstract class DalQueryDaoTest {
 			fail();
 		}
 	}
+	
+    @Test
+    public void testQueryListAllShardsBuilder() throws SQLException {
+        String address = null;
+        Integer id = 1;
+        
+        FreeSelectSqlBuilder query = new FreeSelectSqlBuilder(logicDbName);
+
+        query.selectAll().from(TABLE_NAME).where(like("address ").nullable(address), AND, equal("id").nullable(id));
+
+        
+        query.mapWith(ClientTestModel.class);
+
+        DalQueryDao dao = new DalQueryDao(logicDbName);
+        
+        StatementParameters parameters = new StatementParameters();
+        parameters.set(1, 1);
+        List<ClientTestModel> l = dao.query(query, parameters, new DalHints().inAllShards());
+        Assert.assertTrue(l.size() > 0);
+    }
+
+    @Test
+    public void testQueryListAllShardsBuilderWhen() throws SQLException {
+        String address = null;
+        Integer id = 1;
+        
+        FreeSelectSqlBuilder query = new FreeSelectSqlBuilder(logicDbName);
+
+        query.selectAll().from(TABLE_NAME).where(like("address ").when(address!=null), AND, equal("id").when(id!=null));
+
+        
+        query.mapWith(ClientTestModel.class);
+
+        DalQueryDao dao = new DalQueryDao(logicDbName);
+        
+        StatementParameters parameters = new StatementParameters();
+        parameters.set(1, 1);
+        List<ClientTestModel> l = dao.query(query, parameters, new DalHints().inAllShards());
+        Assert.assertTrue(l.size() > 0);
+    }
+
 	
 	private DalDefaultJpaMapper<ClientTestModel> jpaMapper() throws SQLException{
 		return new DalDefaultJpaMapper<>(ClientTestModel.class);

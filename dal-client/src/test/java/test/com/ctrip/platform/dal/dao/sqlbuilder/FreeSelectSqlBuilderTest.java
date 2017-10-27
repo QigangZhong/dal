@@ -1,18 +1,22 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.like;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.sql.SQLException;
+import java.util.List;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHints;
-import com.ctrip.platform.dal.dao.sqlbuilder.Expressions;
+import com.ctrip.platform.dal.dao.DalQueryDao;
+import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.sqlbuilder.FreeSelectSqlBuilder;
-import static com.ctrip.platform.dal.dao.sqlbuilder.FreeSelectSqlBuilder.*;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
-import com.ctrip.platform.dal.dao.sqlbuilder.FreeUpdateSqlBuilder;
 
 public class FreeSelectSqlBuilderTest {
     private static final String template = "template";

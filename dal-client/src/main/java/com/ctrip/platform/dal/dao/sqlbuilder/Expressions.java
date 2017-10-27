@@ -4,6 +4,8 @@ import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrap
 
 import java.util.Objects;
 
+import com.ctrip.platform.dal.dao.StatementParameters;
+
 /**
  * A factory of static expression methods.
  * 
@@ -50,6 +52,10 @@ public class Expressions {
     }
 
     public static Expression equal(String columnName) {
+        return createColumnExpression("%s = ?", columnName);
+    }
+    
+    public static Expression equal(String columnName, int sqlType, Object value) {
         return createColumnExpression("%s = ?", columnName);
     }
     
@@ -146,6 +152,7 @@ public class Expressions {
             return this;
         }
         
+        
         public boolean isInValid() {
             return inValid;
         }
@@ -160,6 +167,8 @@ public class Expressions {
     
     public static class ColumnExpression extends Expression {
         private String columnName;
+        private int sqlType;
+        private Object value;
         
         public ColumnExpression(String template, String columnName) {
             super(template);
@@ -171,9 +180,36 @@ public class Expressions {
             return columnName;
         }
 
+        public ColumnExpression set(int sqlType, Object value) {
+            this.sqlType = sqlType;
+            this.value = value;
+            return this;
+        }
+        
+        public ColumnExpression nullable() {
+            nullable(value);
+            return this;
+        }
+        
+        public void buildParameter(StatementParameters parameters) {
+            parameters.set(parameters.nextIndex(), columnName, sqlType, value);
+        }
+
         public String build() {
             String template = super.build();
             return columnName == null ? template : String.format(template, wrapField(getDbCategory(), columnName));
+        }
+    }
+    
+    public static class BetweenExpression extends ColumnExpression {
+        private Object value2;
+        public BetweenExpression(String columnName) {
+            super("%s BETWEEN ? AND ?", columnName);
+        }
+        
+        public ColumnExpression nullable() {
+            when()
+            return this;
         }
     }
     

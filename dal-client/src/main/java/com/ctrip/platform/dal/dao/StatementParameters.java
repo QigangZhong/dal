@@ -133,6 +133,10 @@ public class StatementParameters {
 		return parameters.size();
 	}
 	
+    public int nextIndex() {
+        return parameters.size() + 1;
+    }
+	
 	public StatementParameter get(int i) {
 		return parameters.get(i);
 	}
