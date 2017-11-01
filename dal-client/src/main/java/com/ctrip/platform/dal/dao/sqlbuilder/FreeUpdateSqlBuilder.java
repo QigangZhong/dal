@@ -124,7 +124,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
     public FreeUpdateSqlBuilder set(String...columnNames) {
         append(SET);
         for (int i = 0; i < columnNames.length; i++) {
-            append(Expressions.createColumnExpression("%s=?", columnNames[i]));
+            append(Expressions.columnExpression("%s=?", columnNames[i]));
             if(i != columnNames.length -1)
                 append(COMMA);
         }

@@ -2,6 +2,7 @@ package com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrapField;
 
+import java.util.Collection;
 import java.util.Objects;
 
 import com.ctrip.platform.dal.dao.StatementParameters;
@@ -25,7 +26,7 @@ public class Expressions {
 
     public static final Bracket rightBracket = new Bracket(false);
     
-    public static Expression createColumnExpression(String template, String columnName) {
+    public static ColumnExpression columnExpression(String template, String columnName) {
         return new ColumnExpression(template, columnName);
     }
     
@@ -51,60 +52,102 @@ public class Expressions {
         return list.add(leftBracket).add(clauses).add(rightBracket);
     }
 
-    public static Expression equal(String columnName) {
-        return createColumnExpression("%s = ?", columnName);
+    public static ColumnExpression equal(String columnName) {
+        return columnExpression("%s = ?", columnName);
     }
     
-    public static Expression equal(String columnName, int sqlType, Object value) {
-        return createColumnExpression("%s = ?", columnName);
+    public static ColumnExpression equal(String columnName, int sqlType, Object value) {
+        return columnExpression("%s = ?", columnName).set(sqlType, value);
     }
     
-    public static Expression notEqual(String columnName) {
-        return createColumnExpression("%s <> ?", columnName);
+    public static ColumnExpression notEqual(String columnName) {
+        return columnExpression("%s <> ?", columnName);
     }
     
-    public static Expression greaterThan(String columnName) {
-        return createColumnExpression("%s > ?", columnName);
+    public static ColumnExpression notEqual(String columnName, int sqlType, Object value) {
+        return columnExpression("%s <> ?", columnName).set(sqlType, value);
+    }
+    
+    public static ColumnExpression greaterThan(String columnName) {
+        return columnExpression("%s > ?", columnName);
     }
 
-    public static Expression greaterThanEquals(String columnName) {
-        return createColumnExpression("%s >= ?", columnName);
+    public static ColumnExpression greaterThan(String columnName, int sqlType, Object value) {
+        return columnExpression("%s > ?", columnName).set(sqlType, value);
     }
 
-    public static Expression lessThan(String columnName) {
-        return createColumnExpression("%s < ?", columnName);
+    public static ColumnExpression greaterThanEquals(String columnName) {
+        return columnExpression("%s >= ?", columnName);
     }
 
-    public static Expression lessThanEquals(String columnName) {
-        return createColumnExpression("%s <= ?", columnName);
+    public static ColumnExpression greaterThanEquals(String columnName, int sqlType, Object value) {
+        return columnExpression("%s >= ?", columnName).set(sqlType, value);
     }
 
-    public static Expression between(String columnName) {
-        return createColumnExpression("%s BETWEEN ? AND ?", columnName);
+    public static ColumnExpression lessThan(String columnName) {
+        return columnExpression("%s < ?", columnName);
+    }
+
+    public static ColumnExpression lessThan(String columnName, int sqlType, Object value) {
+        return columnExpression("%s < ?", columnName).set(sqlType, value);
+    }
+
+    public static ColumnExpression lessThanEquals(String columnName) {
+        return columnExpression("%s <= ?", columnName);
+    }
+
+    public static ColumnExpression lessThanEquals(String columnName, int sqlType, Object value) {
+        return columnExpression("%s <= ?", columnName).set(sqlType, value);
+    }
+
+    public static BetweenExpression between(String columnName) {
+        return new BetweenExpression(columnName);
     }
     
-    public static Expression like(String columnName) {
-        return createColumnExpression("%s LIKE ?", columnName);
+    public static BetweenExpression between(String columnName, int sqlType, Object lowerValue, Object upperValue) {
+        BetweenExpression between = new BetweenExpression(columnName);
+        between.set(sqlType, lowerValue);
+        return between.setUpperValue(upperValue);
     }
     
-    public static Expression notLike(String columnName) {
-        return createColumnExpression("%s NOT LIKE ?", columnName);
+    public static ColumnExpression like(String columnName) {
+        return columnExpression("%s LIKE ?", columnName);
     }
     
-    public static Expression in(String columnName) {
-        return createColumnExpression("%s IN ( ? )", columnName);
+    public static ColumnExpression like(String columnName, int sqlType, Object value) {
+        return columnExpression("%s LIKE ?", columnName).set(sqlType, value);
     }
     
-    public static Expression notIn(String columnName) {
-        return createColumnExpression("%s NOT IN ( ? )", columnName);
+    public static ColumnExpression notLike(String columnName) {
+        return columnExpression("%s NOT LIKE ?", columnName);
     }
     
-    public static Expression isNull(String columnName) {
-        return createColumnExpression("%s IS NULL", columnName);
+    public static ColumnExpression notLike(String columnName, int sqlType, Object value) {
+        return columnExpression("%s NOT LIKE ?", columnName).set(sqlType, value);
     }
     
-    public static Expression isNotNull(String columnName) {
-        return createColumnExpression("%s IS NOT NULL", columnName);
+    public static ColumnExpression in(String columnName) {
+        return columnExpression("%s IN ( ? )", columnName);
+    }
+    
+    public static ColumnExpression in(String columnName, int sqlType, Collection<?> values) {
+        return columnExpression("%s IN ( ? )", columnName);
+    }
+    
+    public static ColumnExpression notIn(String columnName) {
+        return columnExpression("%s NOT IN ( ? )", columnName);
+    }
+    
+    public static ColumnExpression notIn(String columnName, int sqlType, Collection<?> values) {
+        return columnExpression("%s NOT IN ( ? )", columnName);
+    }
+    
+    public static ColumnExpression isNull(String columnName) {
+        return columnExpression("%s IS NULL", columnName);
+    }
+    
+    public static ColumnExpression isNotNull(String columnName) {
+        return columnExpression("%s IS NOT NULL", columnName);
     }
     
     public static class Operator extends Clause {
@@ -166,9 +209,9 @@ public class Expressions {
     }
     
     public static class ColumnExpression extends Expression {
-        private String columnName;
-        private int sqlType;
-        private Object value;
+        protected String columnName;
+        protected int sqlType;
+        protected Object value;
         
         public ColumnExpression(String template, String columnName) {
             super(template);
@@ -202,14 +245,24 @@ public class Expressions {
     }
     
     public static class BetweenExpression extends ColumnExpression {
-        private Object value2;
+        private Object upperValue;
         public BetweenExpression(String columnName) {
             super("%s BETWEEN ? AND ?", columnName);
         }
         
         public ColumnExpression nullable() {
-            when()
+            when(value != null && upperValue != null);
             return this;
+        }
+        
+        public BetweenExpression setUpperValue(Object upperValue) {
+            this.upperValue = upperValue;
+            return this;
+        }
+        
+        public void buildParameter(StatementParameters parameters) {
+            parameters.set(parameters.nextIndex(), columnName, sqlType, value);
+            parameters.set(parameters.nextIndex(), columnName, sqlType, upperValue);
         }
     }
     
