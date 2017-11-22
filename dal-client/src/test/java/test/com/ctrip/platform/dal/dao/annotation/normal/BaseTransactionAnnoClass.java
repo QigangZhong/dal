@@ -228,6 +228,7 @@ public class BaseTransactionAnnoClass {
         try {
             new DalQueryDao(db).query(query, new StatementParameters(), new DalHints(), Integer.class);
         } catch (SQLException e) {
+            e.printStackTrace();
             fail();
         }
     }

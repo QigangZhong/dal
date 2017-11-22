@@ -42,24 +42,24 @@ import com.ctrip.platform.dal.exceptions.ErrorCode;
 public class PartialQueryTableDaoUnitTest {
 
 	private static DalTableDao<Person> dao = null;
-	
-	private static final String DATABASE_NAME_MYSQL = "MySqlSimpleShard";
-	private final static String TABLE_NAME = "person";
 
-	private final static int mod = 2;
+	private final static String DATABASE_NAME_MYSQL = "MySqlSimpleShard";
+    private final static String TABLE_NAME = "person";
+    private final static int mod = 2;
     private final static int tableMod = 4;
     
-    //Drop the the table
+    //Create the the table
+    private final static String DROP_TABLE_SQL_MYSQL_TPL_ORIGINAL = "DROP TABLE IF EXISTS " + TABLE_NAME;
     private final static String DROP_TABLE_SQL_MYSQL_TPL = "DROP TABLE IF EXISTS " + TABLE_NAME + "_%d";
     
     //Create the the table
     // Note that id is UNSIGNED int, which maps to Long in java when using rs.getObject()
     private final static String CREATE_TABLE_SQL_MYSQL_TPL = "CREATE TABLE " + TABLE_NAME +"_%d("
             + "PeopleID int UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT, "
+            + "Name VARCHAR(64),"
             + "CityID int,"
             + "ProvinceID int,"
-            + "CountryID int,"
-            + "Name VARCHAR(64) not null, "
+            + "CountryID int, "
             + "DataChange_LastTime timestamp default CURRENT_TIMESTAMP)";
     
     private static DalClient clientMySql;
@@ -73,6 +73,7 @@ public class PartialQueryTableDaoUnitTest {
         // For SQL server
         hints = new DalHints();
         for(int i = 0; i < mod; i++) {
+            clientMySql.update(DROP_TABLE_SQL_MYSQL_TPL_ORIGINAL, new StatementParameters(), hints.inShard(i));
             for(int j = 0; j < tableMod; j++) {
                 sqls = new String[] { 
                         String.format(DROP_TABLE_SQL_MYSQL_TPL, j), 
@@ -80,7 +81,8 @@ public class PartialQueryTableDaoUnitTest {
                 clientMySql.batchUpdate(sqls, hints.inShard(i));
             }
         }
-        dao = new DalTableDao<>(Person.class);
+        
+        dao = new DalTableDao<>(new DalDefaultJpaParser<>(Person.class));
     }
 
     @AfterClass
@@ -90,14 +92,15 @@ public class PartialQueryTableDaoUnitTest {
         //For Sql Server
         hints = new DalHints();
         for(int i = 0; i < mod; i++) {
+            clientMySql.update(DROP_TABLE_SQL_MYSQL_TPL_ORIGINAL, new StatementParameters(), hints.inShard(i));
             sqls = new String[tableMod];
             for(int j = 0; j < tableMod; j++) {
                 sqls[j] = String.format(DROP_TABLE_SQL_MYSQL_TPL, j);
             }
             clientMySql.batchUpdate(sqls, hints.inShard(i));
         }
-    }   
-    
+    }
+   
 	@Before
 	public void setUp() throws Exception {
 		tearDown();

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ctrip.platform.dal.dao.client.DalDirectClient;
 import com.ctrip.platform.dal.dao.client.DalLogger;
+import com.ctrip.platform.dal.dao.client.LogEntry;
 import com.ctrip.platform.dal.dao.configure.DalConfigLoader;
 import com.ctrip.platform.dal.dao.configure.DalConfigure;
 import com.ctrip.platform.dal.dao.configure.DalConfigureFactory;
@@ -74,7 +75,11 @@ public class DalClientFactory {
                 logger.info("Successfully initialized Dal Java Client Factory with " + path);
             }
 
-            DalRequestExecutor.init(config.getFacory().getProperty(DalRequestExecutor.MAX_POOL_SIZE));
+            LogEntry.init();
+            DalRequestExecutor.init(
+                    config.getFacory().getProperty(DalRequestExecutor.MAX_POOL_SIZE),
+                    config.getFacory().getProperty(DalRequestExecutor.KEEP_ALIVE_TIME));
+            
             DalStatusManager.initialize(config);
 
             configureRef.set(config);
@@ -150,6 +155,7 @@ public class DalClientFactory {
 
                 DalStatusManager.shutdown();
 
+                LogEntry.shutdown();
                 logger.info("DalWatcher has been destoryed");
             } catch (Throwable e) {
                 logger.error("Error during shutdown", e);

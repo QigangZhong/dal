@@ -3,6 +3,8 @@ package com.ctrip.platform.dal.dao.client;
 import com.ctrip.platform.dal.dao.DalEventEnum;
 
 public class LogEntry {
+    private static volatile ThreadLocal<String> currentCaller;
+
 	private static String execludedPackageSpace = "com.ctrip.platform.dal.dao.";
 	
 	private boolean sensitive;
@@ -23,6 +25,9 @@ public class LogEntry {
 	private String commandType;
 	private String userName;
 	private int resultCount;
+	private Integer affectedRows;
+	private int[] affectedRowsArray;
+	private long connectionCost;
 	private String dao;
 	private String method;
 	private String source;
@@ -189,7 +194,33 @@ public class LogEntry {
 		this.resultCount = resultCount;
 	}
 
-	public String getCallString() {
+	public Integer getAffectedRows() {
+        return affectedRows;
+    }
+
+    public Integer setAffectedRows(Integer affectedRows) {
+        this.affectedRows = affectedRows;
+        return affectedRows;
+    }
+
+    public int[] getAffectedRowsArray() {
+        return affectedRowsArray;
+    }
+
+    public int[] setAffectedRowsArray(int[] affectedRowsArray) {
+        this.affectedRowsArray = affectedRowsArray;
+        return affectedRowsArray;
+    }
+
+    public long getConnectionCost() {
+        return connectionCost;
+    }
+
+    public void setConnectionCost(long connectionCost) {
+        this.connectionCost = connectionCost;
+    }
+
+    public String getCallString() {
 		return callString;
 	}
 
@@ -297,5 +328,59 @@ public class LogEntry {
         return String.format(JSON_PATTERN, begin == 0 ? 0 : beginConnect - begin,
                 endConnect - beginConnect, beginExecute - endConnect,
                 endExecute - beginExecute, end - endExecute);
+    }
+    
+    /**
+     * @return Current caller
+     */
+	public String getCaller() {
+        String sqlType = getDao() + "." + getMethod();
+        
+        // If comes from internal executor
+        if(sqlType.startsWith("java.util.concurrent.FutureTask"))
+            sqlType = currentCaller.get();
+        
+        return sqlType;
+    }
+	
+	public String getCallerInShort() {
+	    try {
+            String caller = getCaller();
+            int lastIndex = caller.lastIndexOf('.');
+            
+            lastIndex = caller.lastIndexOf('.', lastIndex - 1);
+            return caller.substring(lastIndex + 1);
+        } catch (Throwable e) {
+            return "Error!! Can Not Locate Calller";
+        }
+	}
+	
+    /**
+     * Put curent caller into threadlocal to allow ConnectionAction get caller in later stage
+     */
+    public static void populateCurrentCaller(String caller) {
+        currentCaller.set(caller);
+    }
+    
+    /**
+     * Clear curent caller of threadlocal
+     */
+    public static void clearCurrentCaller() {
+        currentCaller.remove();
+    }
+
+    public synchronized static void init(){
+        if(currentCaller != null)
+            return;
+        
+        currentCaller = new ThreadLocal<>();
+    }
+
+    public synchronized static void shutdown() {
+        if(currentCaller == null)
+            return;
+        
+        currentCaller.remove();
+        currentCaller = null;
     }
 }
