@@ -137,7 +137,7 @@ public abstract class DalQueryDaoTest {
         String address = null;
         Integer id = 1;
         
-        FreeSelectSqlBuilder query = new FreeSelectSqlBuilder(logicDbName);
+        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>(logicDbName);
 
         query.selectAll().from(TABLE_NAME).where(like("address ").nullable(address), AND, equal("id").nullable(id));
 
@@ -157,7 +157,7 @@ public abstract class DalQueryDaoTest {
         String address = null;
         Integer id = 1;
         
-        FreeSelectSqlBuilder query = new FreeSelectSqlBuilder(logicDbName);
+        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>(logicDbName);
 
         query.selectAll().from(TABLE_NAME).where(like("address ").when(address!=null), AND, equal("id").when(id!=null));
 

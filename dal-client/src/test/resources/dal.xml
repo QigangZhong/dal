@@ -7,10 +7,10 @@
       <add  name="dao_test_M" databaseType="Master" sharding="" connectionString="MySqlShard_0"/>
     </databaseSet>
     <databaseSet name="HA_Test" provider="mysqlProvider" shardingStrategy="">
-    	<add  name="dao_test_M" databaseType="Master" sharding="" connectionString="MySqlShard_0"/>
-    	<add  name="dao_test_S1" databaseType="Slave" sharding="" connectionString="MySqlShard_0"/>
-      	<add  name="dao_test_S2" databaseType="Slave" sharding="" connectionString="MySqlShard_1"/>
-      	<add  name="dao_test_S3" databaseType="Slave" sharding="" connectionString="MySqlShard_1"/>
+    	<add  name="dao_test_M" databaseType="Master" connectionString="MySqlShard_0"/>
+    	<add  name="dao_test_S1" databaseType="Slave" connectionString="MySqlShard_0"/>
+      	<add  name="dao_test_S2" databaseType="Slave" connectionString="MySqlShard_1"/>
+      	<add  name="dao_test_S3" databaseType="Slave" connectionString="MySqlShard_1"/>
     </databaseSet>
       <databaseSet name="HA_Test_1" provider="mySqlProvider" shardingStrategy="">
     	<add  name="dao_test_M" databaseType="Master" sharding="" connectionString="MySqlShard_0"/>
