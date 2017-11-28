@@ -16,6 +16,10 @@ import com.ctrip.platform.dal.dao.StatementParameters;
 public class Expressions {
     public static final NullClause NULL = new NullClause();
     
+    public static final ImmutableExpression TRUE = new ImmutableExpression("TRUE");
+    
+    public static final ImmutableExpression FALSE = new ImmutableExpression("FALSE");
+    
     public static final Operator AND = new Operator("AND");
     
     public static final Operator OR = new Operator("OR");
@@ -179,7 +183,7 @@ public class Expressions {
     
     public static class Expression extends Clause {
         private String template;
-        private boolean inValid = false;
+        private boolean invalid = false;
         
         public Expression(String template) {
             this.template = template;
@@ -191,20 +195,38 @@ public class Expressions {
         }
         
         public Expression when(Boolean condition) {
-            inValid = !condition;
+            invalid = !condition;
             return this;
         }
         
         
-        public boolean isInValid() {
-            return inValid;
+        public boolean isInvalid() {
+            return invalid;
         }
         
         public String build() {
-            if(inValid)
+            if(invalid)
                 throw new IllegalStateException("This expression is invalid and should be removed instead of build");
             
             return template;
+        }
+    }
+    
+    public static class ImmutableExpression extends Expression {
+        public ImmutableExpression(String template) {
+            super(template);
+        }
+        public Expression nullable(Object o) {
+            return this;
+        }
+        
+        public Expression when(Boolean condition) {
+            return this;
+        }
+        
+        
+        public boolean isInvalid() {
+            return false;
         }
     }
     
@@ -276,7 +298,7 @@ public class Expressions {
             super("");
         }
         
-        public boolean isInValid() {
+        public boolean isInvalid() {
             return true;
         }
         

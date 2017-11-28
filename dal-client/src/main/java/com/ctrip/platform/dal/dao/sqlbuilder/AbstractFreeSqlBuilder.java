@@ -13,6 +13,7 @@ import java.util.Objects;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.ColumnExpression;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 /**
@@ -146,8 +147,20 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         return this;
     }
     
+    public AbstractFreeSqlBuilder setNullable(String name, int sqlType, Object value) {
+        if(value != null)
+            set(name, sqlType, value);
+        return this;
+    }
+    
     public AbstractFreeSqlBuilder setIn(String name, int sqlType, List<?> values) {
         context.getParameters().setInParameter(nextIndex(), name, sqlType, values);
+        return this;
+    }
+    
+    public AbstractFreeSqlBuilder setInNullable(String name, int sqlType, List<?> values) {
+        if(values != null && !values.isEmpty())
+            setIn(name, sqlType, values);
         return this;
     }
     
@@ -368,11 +381,29 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * 
      * Note: The String parameter will be wrapped by Expression.
      * 
+     * If you want to append 1=1 at the beginning, please use where(includeAll()) 
+     * or if you want to select nothing if there is no valid record, please 
+     * use where(excludeAll());
+     * 
      * @param expressions
      * @return
      */
     public AbstractFreeSqlBuilder where(Object...expressions) {
         return append(WHERE).appendExpressions(expressions);
+    }
+    
+    /**
+     * @return exprerssion TRUE and AND
+     */
+    public static Object[] includeAll() {
+        return new Object[]{Expressions.TRUE, Expressions.AND};
+    }
+    
+    /**
+     * @return exprerssion FALSE and OR
+     */
+    public static Object[] excludeAll() {
+        return new Object[]{Expressions.FALSE, Expressions.OR};
     }
     
     /**
@@ -487,7 +518,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * Mark last expression as valid expression that is to be used in builder when value is not null.
+     * Mark last expression as valid expression when value is not null.
      * @param value
      * @return
      */
@@ -501,6 +532,27 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         
         if(last instanceof Expression) {
             ((Expression)last).nullable(value);
+            return this;
+        }
+        
+        throw new IllegalStateException("The last sql segement is not an expression.");
+    }
+    
+    /**
+     * Mark last ColumnExpression as valid expression when value is not null.
+     * @param value
+     * @return
+     */
+    public AbstractFreeSqlBuilder nullable() {
+        List<Clause> list = getClauseList().getList();
+        
+        if(list.isEmpty())
+            throw new IllegalStateException("There is no exitsing sql segement.");
+        
+        Clause last = list.get(list.size() - 1);
+        
+        if(last instanceof ColumnExpression ) {
+            ((ColumnExpression )last).nullable();
             return this;
         }
         
@@ -545,7 +597,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder equal(String columnName, int sqlType, Object value) {
-        return equal(columnName, sqlType, value);
+        return append(Expressions.equal(columnName, sqlType, value));
     }
     
     /**
@@ -564,7 +616,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param value the value of the expression@return
      */
     public AbstractFreeSqlBuilder notEqual(String columnName, int sqlType, Object value) {
-        return notEqual(columnName, sqlType, value);
+        return append(Expressions.notEqual(columnName, sqlType, value));
     }
     
     /**
@@ -584,7 +636,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder greaterThan(String columnName, int sqlType, Object value) {
-        return greaterThan(columnName, sqlType, value);
+        return append(Expressions.greaterThan(columnName, sqlType, value));
     }
 
     /**
@@ -604,7 +656,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder greaterThanEquals(String columnName, int sqlType, Object value) {
-        return greaterThanEquals(columnName, sqlType, value);
+        return append(Expressions.greaterThanEquals(columnName, sqlType, value));
     }
 
     /**
@@ -624,7 +676,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder lessThan(String columnName, int sqlType, Object value) {
-        return lessThan(columnName, sqlType, value);
+        return append(Expressions.lessThan(columnName, sqlType, value));
     }
 
     /**
@@ -644,7 +696,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder lessThanEquals(String columnName, int sqlType, Object value) {
-        return lessThanEquals(columnName, sqlType, value);
+        return append(Expressions.lessThanEquals(columnName, sqlType, value));
     }
 
     /**
@@ -664,7 +716,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder between(String columnName, int sqlType, Object lowerValue, Object upperValue) {
-        return between(columnName, sqlType, lowerValue, upperValue);
+        return append(Expressions.between(columnName, sqlType, lowerValue, upperValue));
     }
     
     /**
@@ -684,7 +736,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder like(String columnName, int sqlType, Object value) {
-        return like(columnName, sqlType, value);
+        return append(Expressions.like(columnName, sqlType, value));
     }
 
     /**
@@ -704,7 +756,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder notLike(String columnName, int sqlType, Object value) {
-        return notLike(columnName, sqlType, value);
+        return append(Expressions.notLike(columnName, sqlType, value));
     }
     
     /**
@@ -724,7 +776,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder in(String columnName, int sqlType, Collection<?> values) {
-        return in(columnName, sqlType, values);
+        return append(Expressions.in(columnName, sqlType, values));
     }
     
     /**
@@ -744,7 +796,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder notIn(String columnName, int sqlType, Collection<?> values) {
-        return notIn(columnName, sqlType, values);
+        return append(Expressions.notIn(columnName, sqlType, values));
     }
     
     /**

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
+import java.sql.Types;
 
 import org.junit.Test;
 
@@ -389,7 +390,7 @@ public class AbstractFreeSqlBuilderTest {
         test = createDisabled();
         Expression exp = new Expression(expression);
         test.append(template).append(exp).nullable(null);
-        assertTrue(exp.isInValid());
+        assertTrue(exp.isInvalid());
         
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -412,7 +413,7 @@ public class AbstractFreeSqlBuilderTest {
         test = createDisabled();
         Expression exp = new Expression(expression);
         test.append(template).append(exp).when(false);
-        assertTrue(exp.isInValid());
+        assertTrue(exp.isInvalid());
         
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -629,5 +630,73 @@ public class AbstractFreeSqlBuilderTest {
         test.setLogicDbName(logicDbName);
         test.appendExpressions(template, AND).bracket(AND, OR, AND, template).appendTable(template).append(AND).append(expression(template)).when(Boolean.FALSE == null);
         assertEquals("template AND (template) [template]", test.build());
+    }
+    
+    @Test
+    public void testIncludeAll() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.select(template).from(template).where(AbstractFreeSqlBuilder.includeAll()).equal(template);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE TRUE AND [template] = ?", test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.select(template).from(template).where(AbstractFreeSqlBuilder.includeAll()).equal(template).nullable(null);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE TRUE", test.build());
+    }
+    
+    @Test
+    public void testExcludeAll() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.select(template).from(template).where(AbstractFreeSqlBuilder.excludeAll()).equal(template);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE FALSE OR [template] = ?", test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.select(template).from(template).where(AbstractFreeSqlBuilder.excludeAll()).equal(template).nullable(null);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE FALSE", test.build());
+    }    
+    
+    @Test
+    public void testSet() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        StatementParameters p = new StatementParameters();
+        test.with(p);
+        test.select(template).from(template).where().equal(template).set(template, Types.VARCHAR, "abc");
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE [template] = ?", test.build());
+        StatementParameters parameters = test.buildParameters();
+        assertEquals(1, parameters.size());
+        assertEquals(template, parameters.get(0).getName());
+    }
+    
+    @Test
+    public void testSetNullable() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        StatementParameters p = new StatementParameters();
+        test.with(p);
+        test.select(template).from(template).where().equal(template).setNullable(null, Types.VARCHAR, "abc").nullable(null);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE", test.build());
+        StatementParameters parameters = test.buildParameters();
+        assertEquals(0, parameters.size());
+    }
+    
+    @Test
+    public void testSetWhen() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        StatementParameters p = new StatementParameters();
+        test.with(p);
+        test.select(template).from(template).where().equal(template).set(template, Types.VARCHAR, "abc").when(false);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE [template] = ?", test.build());
+        StatementParameters parameters = test.buildParameters();
+        assertEquals(0, parameters.size());
+    }
+    
+    @Test
+    public void testSetIn() {
+        
     }
 }
