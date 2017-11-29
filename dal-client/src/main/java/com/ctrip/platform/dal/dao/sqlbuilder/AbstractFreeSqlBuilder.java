@@ -148,9 +148,11 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     public AbstractFreeSqlBuilder setNullable(String name, int sqlType, Object value) {
-        if(value != null)
-            set(name, sqlType, value);
-        return this;
+        return setWhen(value != null, name, sqlType, value);
+    }
+    
+    public AbstractFreeSqlBuilder setWhen(Boolean condition, String name, int sqlType, Object value) {
+        return condition ? set(name, sqlType, value) : this;
     }
     
     public AbstractFreeSqlBuilder setIn(String name, int sqlType, List<?> values) {
@@ -159,9 +161,11 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     public AbstractFreeSqlBuilder setInNullable(String name, int sqlType, List<?> values) {
-        if(values != null && !values.isEmpty())
-            setIn(name, sqlType, values);
-        return this;
+        return setInWhen(values != null && !values.isEmpty(), name, sqlType, values);
+    }
+    
+    public AbstractFreeSqlBuilder setInWhen(Boolean condition, String name, int sqlType, List<?> values) {
+        return condition ? setIn(name, sqlType, values) : this;
     }
     
     /**
