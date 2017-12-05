@@ -6,6 +6,7 @@ import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.locateTableSha
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrapField;
 
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -138,33 +139,61 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * Add parameter methods definition
      */
     
+    /**
+     * @return next valid parameter index
+     */
     public int nextIndex() {
         return context.getParameters().size() + 1;
     }
     
+    /**
+     * Set parameter
+     * @param sqlType java.sql.Types
+     */
     public AbstractFreeSqlBuilder set(String name, int sqlType, Object value) {
         context.getParameters().set(nextIndex(), name, sqlType, value);
         return this;
     }
     
+    /**
+     * Set parameter when value is not null
+     * @param sqlType java.sql.Types
+     */
     public AbstractFreeSqlBuilder setNullable(String name, int sqlType, Object value) {
-        return setWhen(value != null, name, sqlType, value);
+        return set(value != null, name, sqlType, value);
     }
     
-    public AbstractFreeSqlBuilder setWhen(Boolean condition, String name, int sqlType, Object value) {
+    /**
+     * Set parameter when condition is satisfied
+     * @param sqlType java.sql.Types
+     */
+    public AbstractFreeSqlBuilder set(Boolean condition, String name, int sqlType, Object value) {
         return condition ? set(name, sqlType, value) : this;
     }
     
-    public AbstractFreeSqlBuilder setIn(String name, int sqlType, List<?> values) {
+    /**
+     * Set in parameter
+     * @param sqlType java.sql.Types
+     */
+    public AbstractFreeSqlBuilder setIn(String name, int sqlType, List<?> values) throws SQLException {
+        validateInParams(name, values);
         context.getParameters().setInParameter(nextIndex(), name, sqlType, values);
         return this;
     }
     
-    public AbstractFreeSqlBuilder setInNullable(String name, int sqlType, List<?> values) {
-        return setInWhen(values != null && !values.isEmpty(), name, sqlType, values);
+    /**
+     * Set in parameter when value is not null and all its elements are not null
+     * @param sqlType java.sql.Types
+     */
+    public AbstractFreeSqlBuilder setInNullable(String name, int sqlType, List<?> values) throws SQLException {
+        return isNullInParams(values) ? this : setIn(name, sqlType, values);
     }
     
-    public AbstractFreeSqlBuilder setInWhen(Boolean condition, String name, int sqlType, List<?> values) {
+    /**
+     * Set in parameter when condition is satisfied
+     * @param sqlType java.sql.Types
+     */
+    public AbstractFreeSqlBuilder setIn(Boolean condition, String name, int sqlType, List<?> values) throws SQLException {
         return condition ? setIn(name, sqlType, values) : this;
     }
     

@@ -546,13 +546,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder in(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-		if(null == paramValues || paramValues.size() == 0)
-			throw new SQLException(field + " must have more than one value.");
-
-		for(Object obj:paramValues)
-			if(obj==null)
-				throw new SQLException(field + " is not support null value.");
-
+	    validateInParams(field, paramValues);
 		return addInParam(field, paramValues, sqlType, sensitive);
 	}
 	
@@ -568,21 +562,8 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder inNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-		if(null == paramValues || paramValues.size() == 0){
-			return addInternal(NULL);
-		}
-		
-		Iterator<?> ite = paramValues.iterator();
-		while(ite.hasNext()){
-			if(ite.next()==null){
-				ite.remove();
-			}
-		}
-		
-		if(paramValues.size() == 0){
-			return addInternal(NULL);
-		}
-		
+	    if(isNullInParams(paramValues))
+            return addInternal(NULL);
 		return addInParam(field, paramValues, sqlType, sensitive);
 	}
 	
