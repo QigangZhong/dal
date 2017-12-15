@@ -1,10 +1,6 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.NULL;
-
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -97,38 +93,6 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
         return clauses;
     }
     
-    /**
-     * Common helper methods
-     */
-    
-    protected static void validateInParams(String name, List<?> values) throws SQLException {
-        if(null == values || values.size() == 0)
-            throw new SQLException(name + " must have more than one value.");
-
-        
-        if(values.contains(null))
-            throw new SQLException(name + " contains null value.");
-    }
-
-    protected static boolean isNullInParams(List<?> values) {
-        if(null == values || values.size() == 0){
-            return true;
-        }
-        
-        Iterator<?> ite = values.iterator();
-        while(ite.hasNext()){
-            if(ite.next()==null){
-                ite.remove();
-            }
-        }
-        
-        if(values.size() == 0){
-            return true;
-        }
-        
-        return false;
-    }
-
     /**
      * If there is COMMA, then the leading space will not be appended.
      * If there is bracket, then both leading and trailing space will be omitted.

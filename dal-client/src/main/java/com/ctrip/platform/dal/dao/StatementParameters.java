@@ -141,6 +141,10 @@ public class StatementParameters {
 		return parameters.get(i);
 	}
 	
+    public StatementParameter getLast() {
+        return parameters.get(parameters.size() -1);
+    }
+    
 	public StatementParameter get(String name, ParameterDirection direction) {
 		if(name == null)
 			return null;
@@ -151,6 +155,20 @@ public class StatementParameters {
 		}
 		return null;
 	}
+	
+    /**
+     * Set the parameter to be nullable, if it is , the parameter maybe ignored
+     */
+    public void nullable() {
+        getLast().nullable();
+    }
+
+    /**
+     * Set if the parameter is valid or not by the condition
+     */
+    public void when(boolean condition) {
+        getLast().when(condition);
+    }
 
 	public List<StatementParameter> values() {
 		return parameters;
@@ -211,6 +229,7 @@ public class StatementParameters {
 	 * Expand in parameters if necessary. This must be executed before execution
 	 */
 	public void compile() {
+	    buildParameters();
 		if(!containsInParameter())
 			return;
 		
@@ -236,4 +255,13 @@ public class StatementParameters {
 			}
 		}
 	}
+	
+    private void buildParameters() {
+        int i = 1;
+        for(StatementParameter parameter: parameters) {
+            if(parameter.isValid()) {
+                parameter.setIndex(i++);
+            }
+        }
+    }
 }

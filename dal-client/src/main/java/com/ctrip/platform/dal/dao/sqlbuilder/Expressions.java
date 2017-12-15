@@ -3,8 +3,10 @@ package com.ctrip.platform.dal.dao.sqlbuilder;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrapField;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
+import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
 
 /**
@@ -14,7 +16,7 @@ import com.ctrip.platform.dal.dao.StatementParameters;
  *
  */
 public class Expressions {
-    public static final NullClause NULL = new NullClause();
+    public static final NullExpression NULL = new NullExpression();
     
     public static final ImmutableExpression TRUE = new ImmutableExpression("TRUE");
     
@@ -61,7 +63,7 @@ public class Expressions {
     }
     
     public static ColumnExpression equal(String columnName, int sqlType, Object value) {
-        return columnExpression("%s = ?", columnName).set(sqlType, value);
+        return equal(columnName).set(sqlType, value);
     }
     
     public static ColumnExpression notEqual(String columnName) {
@@ -69,7 +71,7 @@ public class Expressions {
     }
     
     public static ColumnExpression notEqual(String columnName, int sqlType, Object value) {
-        return columnExpression("%s <> ?", columnName).set(sqlType, value);
+        return notEqual(columnName).set(sqlType, value);
     }
     
     public static ColumnExpression greaterThan(String columnName) {
@@ -77,7 +79,7 @@ public class Expressions {
     }
 
     public static ColumnExpression greaterThan(String columnName, int sqlType, Object value) {
-        return columnExpression("%s > ?", columnName).set(sqlType, value);
+        return greaterThan(columnName).set(sqlType, value);
     }
 
     public static ColumnExpression greaterThanEquals(String columnName) {
@@ -85,7 +87,7 @@ public class Expressions {
     }
 
     public static ColumnExpression greaterThanEquals(String columnName, int sqlType, Object value) {
-        return columnExpression("%s >= ?", columnName).set(sqlType, value);
+        return greaterThanEquals(columnName).set(sqlType, value);
     }
 
     public static ColumnExpression lessThan(String columnName) {
@@ -93,7 +95,7 @@ public class Expressions {
     }
 
     public static ColumnExpression lessThan(String columnName, int sqlType, Object value) {
-        return columnExpression("%s < ?", columnName).set(sqlType, value);
+        return lessThan(columnName).set(sqlType, value);
     }
 
     public static ColumnExpression lessThanEquals(String columnName) {
@@ -101,7 +103,7 @@ public class Expressions {
     }
 
     public static ColumnExpression lessThanEquals(String columnName, int sqlType, Object value) {
-        return columnExpression("%s <= ?", columnName).set(sqlType, value);
+        return lessThanEquals(columnName).set(sqlType, value);
     }
 
     public static BetweenExpression between(String columnName) {
@@ -119,7 +121,7 @@ public class Expressions {
     }
     
     public static ColumnExpression like(String columnName, int sqlType, Object value) {
-        return columnExpression("%s LIKE ?", columnName).set(sqlType, value);
+        return like(columnName).set(sqlType, value);
     }
     
     public static ColumnExpression notLike(String columnName) {
@@ -127,23 +129,23 @@ public class Expressions {
     }
     
     public static ColumnExpression notLike(String columnName, int sqlType, Object value) {
-        return columnExpression("%s NOT LIKE ?", columnName).set(sqlType, value);
+        return notLike(columnName).set(sqlType, value);
     }
     
     public static ColumnExpression in(String columnName) {
-        return columnExpression("%s IN ( ? )", columnName);
+        return new InExpression(columnName);
     }
     
     public static ColumnExpression in(String columnName, int sqlType, Collection<?> values) {
-        return columnExpression("%s IN ( ? )", columnName);
+        return in(columnName).set(sqlType, values);
     }
     
     public static ColumnExpression notIn(String columnName) {
-        return columnExpression("%s NOT IN ( ? )", columnName);
+        return new NotInExpression(columnName);
     }
     
     public static ColumnExpression notIn(String columnName, int sqlType, Collection<?> values) {
-        return columnExpression("%s NOT IN ( ? )", columnName);
+        return notIn(columnName).set(sqlType, values);
     }
     
     public static ColumnExpression isNull(String columnName) {
@@ -182,7 +184,7 @@ public class Expressions {
     }
     
     public static class Expression extends Clause {
-        private String template;
+        protected String template;
         private boolean invalid = false;
         
         public Expression(String template) {
@@ -202,6 +204,10 @@ public class Expressions {
         
         public boolean isInvalid() {
             return invalid;
+        }
+        
+        public boolean isValid() {
+            return !invalid;
         }
         
         public String build() {
@@ -234,6 +240,7 @@ public class Expressions {
         protected String columnName;
         protected int sqlType;
         protected Object value;
+        protected StatementParameter parameter;
         
         public ColumnExpression(String template, String columnName) {
             super(template);
@@ -246,8 +253,14 @@ public class Expressions {
         }
 
         public ColumnExpression set(int sqlType, Object value) {
+            if(parameter != null)
+                throw new IllegalStateException("An expression can not be set twice!");
+            
             this.sqlType = sqlType;
             this.value = value;
+            StatementParameters parameters = getParameters();
+            parameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
+            parameters.add(parameter);
             return this;
         }
         
@@ -256,8 +269,10 @@ public class Expressions {
             return this;
         }
         
-        public void buildParameter(StatementParameters parameters) {
-            parameters.set(parameters.nextIndex(), columnName, sqlType, value);
+        public Expression when(Boolean condition) {
+            super.when(condition);
+            parameter.when(condition);
+            return this;
         }
 
         public String build() {
@@ -268,6 +283,8 @@ public class Expressions {
     
     public static class BetweenExpression extends ColumnExpression {
         private Object upperValue;
+        private StatementParameter upperParameter;
+        
         public BetweenExpression(String columnName) {
             super("%s BETWEEN ? AND ?", columnName);
         }
@@ -278,13 +295,45 @@ public class Expressions {
         }
         
         public BetweenExpression setUpperValue(Object upperValue) {
+            if(upperParameter != null)
+                throw new IllegalStateException("An expression can not be set twice!");
+
+            StatementParameters parameters = getParameters();
+            upperParameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
+            parameters.add(upperParameter);
+            
             this.upperValue = upperValue;
             return this;
         }
         
-        public void buildParameter(StatementParameters parameters) {
-            parameters.set(parameters.nextIndex(), columnName, sqlType, value);
-            parameters.set(parameters.nextIndex(), columnName, sqlType, upperValue);
+        public Expression when(Boolean condition) {
+            super.when(condition);
+            upperParameter.when(condition);
+            return this;
+        }
+    }
+    
+    public static class InExpression extends ColumnExpression {
+        public InExpression(String columnName) {
+            super("%s IN ( ? )", columnName);
+        }
+        
+        public ColumnExpression nullable() {
+            when(StatementParameter.isNullInParams((List<?>)value));
+            return this;
+        }
+        
+        public ColumnExpression set(int sqlType, Object value) {
+            super.set(sqlType, value);
+            getParameters().getLast().setInParam(true);
+            return this;
+        }
+    }
+    
+    public static class NotInExpression extends InExpression {
+        public NotInExpression(String columnName) {
+            super(columnName);
+            template = "%s NOT IN ( ? )";
         }
     }
     
@@ -293,8 +342,8 @@ public class Expressions {
      * @author jhhe
      *
      */
-    public static class NullClause extends Expression {
-        public NullClause() {
+    public static class NullExpression extends Expression {
+        public NullExpression() {
             super("");
         }
         

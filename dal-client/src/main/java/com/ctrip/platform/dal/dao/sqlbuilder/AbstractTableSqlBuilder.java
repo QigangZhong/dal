@@ -546,7 +546,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder in(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-	    validateInParams(field, paramValues);
+	    StatementParameter.validateInParams(field, paramValues);
 		return addInParam(field, paramValues, sqlType, sensitive);
 	}
 	
@@ -562,7 +562,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	}
 	
 	public AbstractTableSqlBuilder inNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-	    if(isNullInParams(paramValues))
+	    if(StatementParameter.isNullInParams(paramValues))
             return addInternal(NULL);
 		return addInParam(field, paramValues, sqlType, sensitive);
 	}

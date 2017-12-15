@@ -1,6 +1,7 @@
 package com.ctrip.platform.dal.dao;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.ctrip.platform.dal.common.enums.DbType;
@@ -15,11 +16,12 @@ public class StatementParameter implements Comparable<StatementParameter> {
 
 	private ParameterDirection direction;
 
-	private boolean nullable;
-
 	private String name;
 
 	private int index;
+	
+    private boolean nullable = false;
+    private boolean valid = true;
 
 	private boolean sensitive;
 
@@ -36,7 +38,6 @@ public class StatementParameter implements Comparable<StatementParameter> {
 		this.dbType = template.dbType;
 		this.sqlType = template.sqlType;
 		this.direction = template.direction;
-		this.nullable = template.nullable;
 		this.name = template.name;
 		this.index = template.index;
 		this.sensitive = template.sensitive;
@@ -98,6 +99,34 @@ public class StatementParameter implements Comparable<StatementParameter> {
 		return parameter;
 	}
 	
+	public static void validateInParams(String name, List<?> values) {
+        if(null == values || values.size() == 0)
+            throw new IllegalStateException(name + " must have more than one value.");
+        
+        // TODO Do we need to check null element?
+        if(values.contains(null))
+            throw new IllegalStateException(name + " contains null value.");
+    }
+	
+	public static boolean isNullInParams(List<?> values) {
+        if(null == values || values.size() == 0){
+            return true;
+        }
+        
+        Iterator<?> ite = values.iterator();
+        while(ite.hasNext()){
+            if(ite.next()==null){
+                ite.remove();
+            }
+        }
+        
+        if(values.size() == 0){
+            return true;
+        }
+        
+        return false;
+    }
+
 	public boolean isDefaultType(){
 		return defaultType;
 	}
@@ -112,10 +141,6 @@ public class StatementParameter implements Comparable<StatementParameter> {
 
 	public ParameterDirection getDirection() {
 		return direction;
-	}
-
-	public boolean isNullable() {
-		return nullable;
 	}
 
 	public String getName() {
@@ -168,11 +193,6 @@ public class StatementParameter implements Comparable<StatementParameter> {
 		return this;
 	}
 
-	public StatementParameter setNullable(boolean nullable) {
-		this.nullable = nullable;
-		return this;
-	}
-
 	public StatementParameter setName(String name) {
 		this.name = name;
 		return this;
@@ -183,7 +203,37 @@ public class StatementParameter implements Comparable<StatementParameter> {
 		return this;
 	}
 
-	public StatementParameter setSensitive(boolean sensitive) {
+    /**
+     * Set the parameter to be nullable, if it is , the parameter maybe ignored
+     */
+	public void nullable() {
+        this.nullable = true;
+    }
+
+    /**
+     * Set if the parameter is valid or not by the condition
+     */
+    public void when(boolean condition) {
+        this.valid = condition;
+    }
+    
+    /**
+     * @return if this parameter can be removed
+     */
+    public boolean isValid() {
+        if(nullable && value == null)
+            return false;
+            
+        if(nullable && isInParam() && isNullInParams((List<?>)value))
+            return false;
+        
+        if(!nullable && isInParam())
+            validateInParams(name, (List<?>)value);
+            
+        return valid;
+    }
+
+    public StatementParameter setSensitive(boolean sensitive) {
 		this.sensitive = sensitive;
 		return this;
 	}
