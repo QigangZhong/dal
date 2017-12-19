@@ -31,6 +31,7 @@ public class ClauseList extends Clause {
     public ClauseList add(Clause... clauses) {
         for(Clause c: clauses) {
             c.setContext(context);
+            c.postAppend();
             list.add(c);
         }
         return this;

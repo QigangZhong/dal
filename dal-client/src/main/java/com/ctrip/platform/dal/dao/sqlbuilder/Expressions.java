@@ -116,6 +116,16 @@ public class Expressions {
         return between.setUpperValue(upperValue);
     }
     
+    public static BetweenExpression notBetween(String columnName) {
+        return new NotBetweenExpression(columnName);
+    }
+    
+    public static BetweenExpression notBetween(String columnName, int sqlType, Object lowerValue, Object upperValue) {
+        NotBetweenExpression notBetween = new NotBetweenExpression(columnName);
+        notBetween.set(sqlType, lowerValue);
+        return notBetween.setUpperValue(upperValue);
+    }
+    
     public static ColumnExpression like(String columnName) {
         return columnExpression("%s LIKE ?", columnName);
     }
@@ -196,7 +206,7 @@ public class Expressions {
             return this;
         }
         
-        public Expression when(Boolean condition) {
+        public Expression when(boolean condition) {
             invalid = !condition;
             return this;
         }
@@ -226,7 +236,7 @@ public class Expressions {
             return this;
         }
         
-        public Expression when(Boolean condition) {
+        public Expression when(boolean condition) {
             return this;
         }
         
@@ -238,7 +248,8 @@ public class Expressions {
     
     public static class ColumnExpression extends Expression {
         protected String columnName;
-        protected int sqlType;
+        // Used as a flag to decide if set() is called or not
+        protected Integer sqlType;
         protected Object value;
         protected StatementParameter parameter;
         
@@ -258,20 +269,31 @@ public class Expressions {
             
             this.sqlType = sqlType;
             this.value = value;
-            StatementParameters parameters = getParameters();
-            parameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
-            parameters.add(parameter);
             return this;
         }
         
+        public void postAppend() {
+            if(sqlType == null)
+                return;
+            
+            StatementParameters parameters = getParameters();
+            parameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
+            parameter.when(isValid());
+            parameters.add(parameter);            
+        }
+        
         public ColumnExpression nullable() {
+            if(sqlType == null)
+                throw new IllegalStateException("This operation is only avaliable when set(sqlType, value) is called!");
+            
             nullable(value);
             return this;
         }
         
-        public Expression when(Boolean condition) {
+        public Expression when(boolean condition) {
             super.when(condition);
-            parameter.when(condition);
+            if(parameter != null)
+                parameter.when(condition);
             return this;
         }
 
@@ -298,18 +320,33 @@ public class Expressions {
             if(upperParameter != null)
                 throw new IllegalStateException("An expression can not be set twice!");
 
-            StatementParameters parameters = getParameters();
-            upperParameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
-            parameters.add(upperParameter);
-            
             this.upperValue = upperValue;
             return this;
         }
         
-        public Expression when(Boolean condition) {
+        public void postAppend() {
+            super.postAppend();
+            if(sqlType == null)
+                return;
+            
+            StatementParameters parameters = getParameters();
+            upperParameter = new StatementParameter(parameters.nextIndex(), sqlType, value).setName(columnName);
+            parameters.add(upperParameter);
+            upperParameter.when(isValid());            
+        }
+        
+        public Expression when(boolean condition) {
             super.when(condition);
-            upperParameter.when(condition);
+            if(upperParameter != null)
+                upperParameter.when(condition);
             return this;
+        }
+    }
+    
+    public static class NotBetweenExpression extends BetweenExpression {
+        public NotBetweenExpression(String columnName) {
+            super(columnName);
+            template = "%s NOT BETWEEN ? AND ?";
         }
     }
     
@@ -319,14 +356,16 @@ public class Expressions {
         }
         
         public ColumnExpression nullable() {
-            when(StatementParameter.isNullInParams((List<?>)value));
+            when(!StatementParameter.isNullInParams((List<?>)value));
             return this;
         }
         
-        public ColumnExpression set(int sqlType, Object value) {
-            super.set(sqlType, value);
+        public void postAppend() {
+            super.postAppend();
+            if(sqlType == null)
+                return;
+
             getParameters().getLast().setInParam(true);
-            return this;
         }
     }
     

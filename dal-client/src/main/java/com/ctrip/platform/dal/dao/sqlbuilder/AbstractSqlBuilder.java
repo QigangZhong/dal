@@ -18,7 +18,6 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
     
     private BuilderContext context;
     private ClauseList clauses = new ClauseList();
-    private boolean enableAutoMeltdown = true;
     private boolean enableSmartSpaceSkipping= true;
 
     public AbstractSqlBuilder(BuilderContext context) {
@@ -52,21 +51,13 @@ public abstract class AbstractSqlBuilder implements SqlBuilder {
     public String build() {
         try {
             List<Clause> clauseList = clauses.getList();
-
-            if(enableAutoMeltdown)
-                clauseList = (List<Clause>)meltdown(clauseList);
+            
+            clauseList = meltdown(clauseList);
             
             return concat(clauseList);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Disable the auto removal of AND, OR, NOT, (, ) and nullable expression
-     */
-    public void disableAutoMeltdown() {
-        enableAutoMeltdown = false;
     }
     
     /**

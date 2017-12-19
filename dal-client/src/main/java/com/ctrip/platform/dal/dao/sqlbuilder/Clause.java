@@ -46,4 +46,10 @@ public abstract class Clause {
     public StatementParameters getParameters() {
         return context.getParameters();
     }
+    
+    /**
+     * Called when clause added to builder and setContext() is called
+     */
+    public void postAppend() {
+    }
 }

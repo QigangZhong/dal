@@ -207,7 +207,10 @@ public class StatementParameter implements Comparable<StatementParameter> {
      * Set the parameter to be nullable, if it is , the parameter maybe ignored
      */
 	public void nullable() {
-        this.nullable = true;
+	    if(isInParam())
+	        when(!isNullInParams((List<?>)value));
+	    else
+	        when(value != null);
     }
 
     /**
@@ -221,16 +224,13 @@ public class StatementParameter implements Comparable<StatementParameter> {
      * @return if this parameter can be removed
      */
     public boolean isValid() {
-        if(nullable && value == null)
-            return false;
-            
-        if(nullable && isInParam() && isNullInParams((List<?>)value))
+        if(valid == false)
             return false;
         
-        if(!nullable && isInParam())
+        if(isInParam())
             validateInParams(name, (List<?>)value);
             
-        return valid;
+        return true;
     }
 
     public StatementParameter setSensitive(boolean sensitive) {

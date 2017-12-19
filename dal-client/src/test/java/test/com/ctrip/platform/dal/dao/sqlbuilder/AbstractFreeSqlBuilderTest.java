@@ -12,6 +12,8 @@ import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -33,7 +35,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testSetLogicDbName() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         try {
             test.setLogicDbName(null);
             fail();
@@ -55,16 +57,18 @@ public class AbstractFreeSqlBuilderTest {
      * Create test with auto meltdown disabled
      * @return
      */
-    private AbstractFreeSqlBuilder createDisabled() {
+    private AbstractFreeSqlBuilder create() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.disableAutoMeltdown();
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints());
+        StatementParameters p = new StatementParameters();
+        test.with(p);
         return test;
     }
     
-    
     @Test
     public void testSetHints() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         try {
             test.setHints(null);
             fail();
@@ -76,7 +80,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWith() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         try {
             test.with(null);
             fail();
@@ -103,75 +107,75 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testAppend() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.append(template);
         assertEquals(template, test.build());
     }
 
     @Test
     public void testAppendCondition() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendWhen(true, template);
         assertEquals(template, test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendWhen(false, template);
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendConditionWithElse() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendWhen(true, template, elseTemplate);
         assertEquals(template, test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendWhen(false, template, elseTemplate);
         assertEquals(elseTemplate, test.build());
     }
     
     @Test
     public void testAppendClause() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.append(new Text(template));
         assertEquals(template, test.build());
     }
 
     @Test
     public void testAppendClauseCondition() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendWhen(true, new Text(template));
         assertEquals(template, test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendWhen(false, new Text(template));
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendClauseConditionWithElse() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendWhen(true, new Text(template), new Text(elseTemplate));
         assertEquals(template, test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendWhen(false, new Text(template), new Text(elseTemplate));
         assertEquals(elseTemplate, test.build());
     }
     
     @Test
     public void testAppendColumn() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendColumn(template);
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "]", test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendColumn(template, template);
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "] AS " + template, test.build());
 
-        test = createDisabled();
+        test = create();
         test.append(column(template).as(template));
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "] AS " + template, test.build());
@@ -181,25 +185,25 @@ public class AbstractFreeSqlBuilderTest {
     public void testAppendTable() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.appendTable(noShardTable);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("[" + noShardTable + "]", test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendTable(tableName);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints().inTableShard(1));
         assertEquals("[" + tableName + "_1]", test.build());
         
-        test = createDisabled();
+        test = create();
         test.appendTable(tableName, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints().inTableShard(1));
         assertEquals("[" + tableName + "_1] AS " + template, test.build());
 
-        test = createDisabled();
+        test = create();
         test.append(table(tableName).as(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints().inTableShard(1));
@@ -210,13 +214,13 @@ public class AbstractFreeSqlBuilderTest {
     public void testSelect() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.select(template, template, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("SELECT [template], [template], [template]", test.build());
         
-        test = createDisabled();
+        test = create();
         test.select(template, text(template), expression(template), column(template).as(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -227,13 +231,13 @@ public class AbstractFreeSqlBuilderTest {
     public void testFrom() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.from(noShardTable);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("FROM [noShard] WITH (NOLOCK)", test.build());
         
-        test = createDisabled();
+        test = create();
         test.from(table(noShardTable));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -242,7 +246,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWhere() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.where(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -251,7 +255,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWhereClause() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.where(expression("count()"), text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -260,7 +264,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testOrderBy() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.orderBy(template, true);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -269,13 +273,13 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testGroupBy() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.groupBy(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("GROUP BY " + wrappedTemplate, test.build());
         
-        test = createDisabled();
+        test = create();
         test.groupBy(expression(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -284,7 +288,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testHaving() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.having(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -293,7 +297,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testLeftBracket() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.leftBracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -302,7 +306,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testRightBracket() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.rightBracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -312,21 +316,21 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testBracket() {
         //Empty
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.bracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals("()", test.build());
+        assertEquals("", test.build());
         
         //One
-        test = createDisabled();
+        test = create();
         test.bracket(text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("(template)", test.build());
         
         //two
-        test = createDisabled();
+        test = create();
         test.bracket(text(template), expression(expression));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -335,229 +339,481 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testAnd() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.and(text(template), text(expression));
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(template + " AND " + expression, test.build());
-    }
-    
-    @Test
-    public void testAndMultiple() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
+        test.and();
+        assertEquals("", test.build());
+
+        test = create();
         test.and(template, template, template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
         assertEquals("template AND template AND template", test.build());
     }
     
     @Test
     public void testOr() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.or();
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals("OR", test.build());
-    }
-    
-    @Test
-    public void testOrMultiple() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.or(text(template), text(expression));
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
+        assertEquals("", test.build());
+
+        test = create();
+        test.or(template, expression);
         assertEquals(template + " OR " + expression, test.build());
     }
     
     @Test
     public void testNot() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.not();
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
         assertEquals("NOT", test.build());
     }
     
     @Test
     public void testNullable() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
+        Expression exp;
         try {
             test.nullable(null);
             fail();
         } catch (Exception e) {
         }
         
-        test = createDisabled();
-        Expression exp = new Expression(expression);
-        test.append(template).append(exp).nullable(null);
-        assertTrue(exp.isInvalid());
-        
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
+        test = create();
         try {
-            assertEquals(template + expression, test.build());
+            test.append(template).nullable(null);
             fail();
         } catch (Exception e) {
         }
+
+        test = create();
+        try {
+            test.append(template).nullable(new Object());
+            fail();
+        } catch (Exception e) {
+        }
+
+        test = create();
+        exp = new Expression(expression);
+        test.append(template).append(exp).nullable(null);
+        assertTrue(exp.isInvalid());
+        assertEquals(template, test.build());
+
+        test = create();
+        exp = new Expression(expression);
+        test.append(template).append(exp).nullable(new Object());
+        assertTrue(exp.isValid());
+        assertEquals(template + " " + expression, test.build());        
     }
     
     @Test
     public void testWhen() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
+        Expression exp;
         try {
             test.when(false);
             fail();
         } catch (Exception e) {
         }
         
-        test = createDisabled();
-        Expression exp = new Expression(expression);
-        test.append(template).append(exp).when(false);
-        assertTrue(exp.isInvalid());
-        
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
+        test = create();
         try {
-            assertEquals(template + expression, test.build());
+            test.append(template).when(false);
             fail();
         } catch (Exception e) {
         }
+
+        test = create();
+        try {
+            test.append(template).when(true);
+            fail();
+        } catch (Exception e) {
+        }
+
+        test = create();
+        exp = new Expression(expression);
+        test.append(template).append(exp).when(false);
+        assertTrue(exp.isInvalid());
+        assertEquals(template, test.build());
+        
+        test = create();
+        exp = new Expression(expression);
+        test.append(template).append(exp).when(true);
+        assertTrue(exp.isValid());
+        assertEquals(template + " " + expression, test.build());
+    }
+    
+    private interface ExpressionProvider {
+        AbstractFreeSqlBuilder createExp();
+        AbstractFreeSqlBuilder createExpWithParameter();
+        AbstractFreeSqlBuilder createExpWithNullParameter();
+    }
+    
+    public void testExpression(String result, ExpressionProvider provider) {
+        testExpression(result, 1, provider);
+    }
+    
+    public void testExpression(String result, int count, ExpressionProvider provider) {
+        testExpr(result, 0, provider.createExp());
+        testExpr(result, count, provider.createExpWithParameter());
+        
+        testExpr(result, 0, provider.createExp().nullable(new Object()));        
+        testExpr(result, count, provider.createExpWithParameter().nullable(new Object()));        
+
+        testExpr(result, 0, provider.createExp().when(true));
+        testExpr(result, count, provider.createExpWithParameter().when(true));
+        
+        testNullError(provider.createExp());
+        testNull(provider.createExpWithNullParameter().nullable());
+        testExpr(result, count, provider.createExpWithParameter().nullable());
+        
+        
+        testNull(provider.createExp().nullable(null));
+        testNull(provider.createExpWithParameter().nullable(null));
+        
+        testNull(provider.createExp().when(false));
+        testNull(provider.createExpWithParameter().when(false));
     }
     
     @Test
     public void testEqual() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.equal(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " = ?", test.build());
+        testExpression(wrappedTemplate + " = ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().equal(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().equal(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().equal(template, Types.VARCHAR, null);
+            }
+        });
+    }
+    
+    private void testExpr(String result, int count, AbstractFreeSqlBuilder builder) {
+        assertEquals(result, builder.build());
+        assertEquals(count, builder.buildParameters().size());
+    }
+    
+    private void testNull(AbstractFreeSqlBuilder builder) {
+        testExpr("", 0, builder);
+    }
+    
+    private void testNullError(AbstractFreeSqlBuilder builder) {
+        try {
+            builder.nullable();
+            fail();
+        } catch (Throwable e) {
+        }
     }
     
     @Test
     public void testNotEqual() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.notEqual(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " <> ?", test.build());
+        testExpression(wrappedTemplate + " <> ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notEqual(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().notEqual(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notEqual(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testGreaterThan() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.greaterThan(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " > ?", test.build());
+        testExpression(wrappedTemplate + " > ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().greaterThan(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().greaterThan(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().greaterThan(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testGreaterThanEquals() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.greaterThanEquals(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " >= ?", test.build());
+        testExpression(wrappedTemplate + " >= ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().greaterThanEquals(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().greaterThanEquals(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().greaterThanEquals(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testLessThan() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.lessThan(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " < ?", test.build());
+        testExpression(wrappedTemplate + " < ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().lessThan(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().lessThan(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().lessThan(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testLessThanEquals() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.lessThanEquals(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " <= ?", test.build());
-    }
-    
-    @Test
-    public void testBetween() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.between(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " BETWEEN ? AND ?", test.build());
+        testExpression(wrappedTemplate + " <= ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().lessThanEquals(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().lessThanEquals(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().lessThanEquals(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testLike() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.like(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " LIKE ?", test.build());
+        testExpression(wrappedTemplate + " LIKE ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().like(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().like(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().like(template, Types.VARCHAR, null);
+            }
+        });
     }
     
     @Test
     public void testNotLike() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.notLike(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " NOT LIKE ?", test.build());
+        testExpression(wrappedTemplate + " NOT LIKE ?", new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notLike(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().notLike(template, Types.VARCHAR, "abc");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notLike(template, Types.VARCHAR, null);
+            }
+        });
+    }
+    
+    @Test
+    public void testBetween() {
+        String result = wrappedTemplate + " BETWEEN ? AND ?";
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().between(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().between(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().between(template, Types.VARCHAR, null, null);
+            }
+        });
+        
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().between(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().between(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().between(template, Types.VARCHAR, "abc", null);
+            }
+        });
+
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().between(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().between(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().between(template, Types.VARCHAR, null, "abc");
+            }
+        });
+    }
+    
+    @Test
+    public void testNotBetween() {
+        String result = wrappedTemplate + " NOT BETWEEN ? AND ?";
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notBetween(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().notBetween(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notBetween(template, Types.VARCHAR, null, null);
+            }
+        });
+        
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notBetween(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().notBetween(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notBetween(template, Types.VARCHAR, "abc", null);
+            }
+        });
+
+        testExpression(result, 2, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notBetween(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                return create().notBetween(template, Types.VARCHAR, "abc", "def");
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notBetween(template, Types.VARCHAR, null, "abc");
+            }
+        });
     }
     
     @Test
     public void testIn() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.in(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " IN ( ? )", test.build());
+        String result = wrappedTemplate + " IN ( ? )";
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().in(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().in(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().in(template, Types.VARCHAR, null);
+            }
+        });
+
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().in(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().in(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().in(template, Types.VARCHAR, new ArrayList<>());
+            }
+        });
+        
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().in(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().in(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                List l = new ArrayList<>();
+                l.add(null);
+                return create().in(template, Types.VARCHAR, l);
+            }
+        });
     }
     
     @Test
     public void testNotIn() {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.notIn(template);
-        test.setLogicDbName(logicDbName);
-        test.setHints(new DalHints());
-        assertEquals(wrappedTemplate + " NOT IN ( ? )", test.build());
+        String result = wrappedTemplate + " NOT IN ( ? )";
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notIn(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().notIn(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notIn(template, Types.VARCHAR, null);
+            }
+        });
+
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notIn(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().notIn(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                return create().notIn(template, Types.VARCHAR, new ArrayList<>());
+            }
+        });
+        
+        testExpression(result, 1, new ExpressionProvider() {
+            public AbstractFreeSqlBuilder createExp() {
+                return create().notIn(template);
+            }
+            public AbstractFreeSqlBuilder createExpWithParameter() {
+                List l = new ArrayList<>();
+                l.add("abc");
+                return create().notIn(template, Types.VARCHAR, l);
+            }
+            public AbstractFreeSqlBuilder createExpWithNullParameter() {
+                List l = new ArrayList<>();
+                l.add(null);
+                return create().notIn(template, Types.VARCHAR, l);
+            }
+        });
     }
     
     @Test
     public void testIsNull() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.isNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals(wrappedTemplate + " IS NULL", test.build());
+        assertEquals(0, test.buildParameters().size());
     }
     
     @Test
     public void testIsNotNull() {
-        AbstractFreeSqlBuilder test = createDisabled();
+        AbstractFreeSqlBuilder test = create();
         test.isNotNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals(wrappedTemplate + " IS NOT NULL", test.build());
+        assertEquals(0, test.buildParameters().size());
     }
     
     @Test
     public void testExpression() throws SQLException {
         Clause test = expression(template);
         
-        AbstractFreeSqlBuilder builder = createDisabled();
+        AbstractFreeSqlBuilder builder = create();
         builder.append(test);
         builder.setLogicDbName(logicDbName);
 
         assertEquals(template, test.build());
-    }
-    
-    @Test
-    public void testDisableAutoMeltdown() throws SQLException {
-        AbstractFreeSqlBuilder test = createDisabled();
-        test.appendExpressions(AND).bracket(AND, OR, AND);
-        test.disableAutoMeltdown();
-        assertEquals("AND (AND OR AND )", test.build());
     }
     
     @Test
@@ -677,9 +933,18 @@ public class AbstractFreeSqlBuilderTest {
         test.setLogicDbName(logicDbName);
         StatementParameters p = new StatementParameters();
         test.with(p);
-        test.select(template).from(template).where().equal(template).setNullable(null, Types.VARCHAR, "abc").nullable(null);
+        test.select(template).from(template).where().equal(template).setNullable("abc", Types.VARCHAR, null).nullable(null);
         assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE", test.build());
         StatementParameters parameters = test.buildParameters();
+        assertEquals(0, parameters.size());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        p = new StatementParameters();
+        test.with(p);
+        test.select(template).from(template).where().equal(template).setNullable("abc", Types.VARCHAR, null);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE [template] = ?", test.build());
+        parameters = test.buildParameters();
         assertEquals(0, parameters.size());
     }
     
@@ -689,8 +954,8 @@ public class AbstractFreeSqlBuilderTest {
         test.setLogicDbName(logicDbName);
         StatementParameters p = new StatementParameters();
         test.with(p);
-        test.select(template).from(template).where().equal(template).set(template, Types.VARCHAR, "abc").when(false);
-        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE [template] = ?", test.build());
+        test.select(template).from(template).where().equal(template).set(false, template, Types.VARCHAR, "abc").when(false);
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE", test.build());
         StatementParameters parameters = test.buildParameters();
         assertEquals(0, parameters.size());
     }

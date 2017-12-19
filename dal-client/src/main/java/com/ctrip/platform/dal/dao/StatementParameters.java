@@ -229,7 +229,6 @@ public class StatementParameters {
 	 * Expand in parameters if necessary. This must be executed before execution
 	 */
 	public void compile() {
-	    buildParameters();
 		if(!containsInParameter())
 			return;
 		
@@ -256,12 +255,21 @@ public class StatementParameters {
 		}
 	}
 	
-    private void buildParameters() {
+    /**
+     * Remove invalid parameter and reorder index
+     */
+	public StatementParameters buildParameters() {
+	    List<StatementParameter> newParameters = new LinkedList<StatementParameter>();
+
         int i = 1;
         for(StatementParameter parameter: parameters) {
             if(parameter.isValid()) {
                 parameter.setIndex(i++);
+                newParameters.add(parameter);
             }
         }
+        
+        parameters = newParameters;
+        return this;
     }
 }

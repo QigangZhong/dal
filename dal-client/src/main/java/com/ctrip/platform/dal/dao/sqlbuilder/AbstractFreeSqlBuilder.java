@@ -105,7 +105,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     
     @Override
     public StatementParameters buildParameters() {
-        return context.getParameters();
+        return context.getParameters().buildParameters();
     }
     
     public static Text text(Object template) {
@@ -163,7 +163,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * Set parameter when condition is satisfied
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder set(Boolean condition, String name, int sqlType, Object value) {
+    public AbstractFreeSqlBuilder set(boolean condition, String name, int sqlType, Object value) {
         set(name, sqlType, value);
         getParameters().when(condition);
         return this;
@@ -192,7 +192,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * Set in parameter when condition is satisfied
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder setIn(Boolean condition, String name, int sqlType, List<?> values) throws SQLException {
+    public AbstractFreeSqlBuilder setIn(boolean condition, String name, int sqlType, List<?> values) throws SQLException {
         setIn(name, sqlType, values);
         getParameters().when(condition);
         return this;
@@ -544,11 +544,14 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     private void appendExpr(Object expr) {
+        Objects.requireNonNull(expr, "Parameter can not be null");
+        
         if(expr instanceof String) {
             appendExpression((String)expr);
-        }else {
+        }else if (expr instanceof Exception){
             append(expr);
-        }
+        } else
+            throw new IllegalArgumentException("Parameter must be Expression or String");
     }
     
     /**
@@ -557,19 +560,8 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder nullable(Object value) {
-        List<Clause> list = getClauseList().getList();
-        
-        if(list.isEmpty())
-            throw new IllegalStateException("There is no exitsing sql segement.");
-        
-        Clause last = list.get(list.size() - 1);
-        
-        if(last instanceof Expression) {
-            ((Expression)last).nullable(value);
-            return this;
-        }
-        
-        throw new IllegalStateException("The last sql segement is not an expression.");
+        getLastExpression().nullable(value);
+        return this;
     }
     
     /**
@@ -578,19 +570,13 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder nullable() {
-        List<Clause> list = getClauseList().getList();
+        Expression last = getLastExpression();
+
+        if(!(last instanceof ColumnExpression))
+            throw new IllegalStateException("The last sql segement is not an ColumnExpression.");
         
-        if(list.isEmpty())
-            throw new IllegalStateException("There is no exitsing sql segement.");
-        
-        Clause last = list.get(list.size() - 1);
-        
-        if(last instanceof ColumnExpression ) {
-            ((ColumnExpression )last).nullable();
-            return this;
-        }
-        
-        throw new IllegalStateException("The last sql segement is not an expression.");
+        ((ColumnExpression)last).nullable();
+        return this;    
     }
 
     /**
@@ -598,7 +584,12 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param value
      * @return
      */
-    public AbstractFreeSqlBuilder when(Boolean condition) {
+    public AbstractFreeSqlBuilder when(boolean condition) {
+        getLastExpression().when(condition);
+        return this;
+    }
+    
+    private Expression getLastExpression() {
         List<Clause> list = getClauseList().getList();
         
         if(list.isEmpty())
@@ -606,12 +597,10 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         
         Clause last = list.get(list.size() - 1);
         
-        if(last instanceof Expression) {
-            ((Expression)last).when(condition);
-            return this;
-        }
+        if(!(last instanceof Expression))
+            throw new IllegalStateException("The last sql segement is not an expression.");
         
-        throw new IllegalStateException("The last sql segement is not an expression.");
+        return ((Expression)last);
     }
 
     /**
@@ -751,6 +740,26 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      */
     public AbstractFreeSqlBuilder between(String columnName, int sqlType, Object lowerValue, Object upperValue) {
         return append(Expressions.between(columnName, sqlType, lowerValue, upperValue));
+    }
+    
+    /**
+     * Append NOT BETWEEN expression using the giving name
+     * @param columnName  column name, can not be expression.
+     * @return
+     */
+    public AbstractFreeSqlBuilder notBetween(String columnName) {
+        return append(Expressions.notBetween(columnName));
+    }
+    
+    /**
+     * Append NOT BETWEEN expression using the giving name, type and value
+     * @param columnName  column name, can not be expression.
+     * @param sqlType corresponding sql type of the value
+     * @param value the value of the expression
+     * @return
+     */
+    public AbstractFreeSqlBuilder notBetween(String columnName, int sqlType, Object lowerValue, Object upperValue) {
+        return append(Expressions.notBetween(columnName, sqlType, lowerValue, upperValue));
     }
     
     /**
