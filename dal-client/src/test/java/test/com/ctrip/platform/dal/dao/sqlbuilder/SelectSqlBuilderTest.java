@@ -118,6 +118,7 @@ public class SelectSqlBuilderTest {
 		try {
 			builder.and().in("inparam3", inParam3, sqlType);
 		} catch (Exception e) {
+		    e.printStackTrace();
 			Assert.assertEquals("inparam3 is not support null value.", e.getMessage());
 		}
 		builder.and().inNullable("inNullable3", inParam3, Types.VARCHAR);

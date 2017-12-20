@@ -103,9 +103,8 @@ public class StatementParameter implements Comparable<StatementParameter> {
         if(null == values || values.size() == 0)
             throw new IllegalStateException(name + " must have more than one value.");
         
-        // TODO Do we need to check null element?
         if(values.contains(null))
-            throw new IllegalStateException(name + " contains null value.");
+            throw new IllegalStateException(name + " is not support null value.");
     }
 	
 	public static boolean isNullInParams(List<?> values) {

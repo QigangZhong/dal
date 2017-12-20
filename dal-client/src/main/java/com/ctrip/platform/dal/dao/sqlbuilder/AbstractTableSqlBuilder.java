@@ -579,13 +579,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
     }
     
     public AbstractTableSqlBuilder notIn(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
-        if(null == paramValues || paramValues.size() == 0)
-            throw new SQLException(field + " must have more than one value.");
-
-        for(Object obj:paramValues)
-            if(obj==null)
-                throw new SQLException(field + " is not support null value.");
-
+        StatementParameter.validateInParams(field, paramValues);
         return addNotInParam(field, paramValues, sqlType, sensitive);
     }
     
