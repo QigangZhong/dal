@@ -8,6 +8,7 @@ import java.util.Map;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHintEnum;
 import com.ctrip.platform.dal.dao.DalHints;
+import com.ctrip.platform.dal.dao.DalParser;
 import com.ctrip.platform.dal.dao.DalResultSetExtractor;
 import com.ctrip.platform.dal.dao.DalRowMapper;
 import com.ctrip.platform.dal.dao.ResultMerger;
@@ -22,7 +23,8 @@ import com.ctrip.platform.dal.dao.helper.DalSingleResultExtractor;
 import com.ctrip.platform.dal.dao.helper.DalSingleResultMerger;
 
 public class SelectSqlBuilder extends AbstractTableSqlBuilder implements SelectBuilder {
-    private static final String ALL_COLUMNS = "*";
+    private static final String ALL = "*";
+    private static final String ALL_COLUMNS = "***";
     private static final String COUNT = "COUNT(1)";
     private static final String SPACE = " ";
     private static final String ORDER_BY = "ORDER BY ";
@@ -119,11 +121,17 @@ public class SelectSqlBuilder extends AbstractTableSqlBuilder implements SelectB
 	}
 	
 	public SelectSqlBuilder selectAll() {
-        this.customized = ALL_COLUMNS;
+        this.customized = ALL;
         selectedColumns = null;
 		return this;
 	}
 	
+    public SelectSqlBuilder selectAllColumns() {
+        this.customized = ALL_COLUMNS;
+        selectedColumns = null;
+        return this;
+    }
+    
 	public SelectSqlBuilder selectCount() {
         this.customized = COUNT;
         selectedColumns = null;
@@ -278,8 +286,12 @@ public class SelectSqlBuilder extends AbstractTableSqlBuilder implements SelectB
         if(customized == COUNT)
             return mapper;
         
-        if(customized == ALL_COLUMNS)
+        if(customized == ALL)
             return mapper;
+        
+        if(customized == ALL_COLUMNS) {
+            return mapper;
+        }
         
         if(hints.is(DalHintEnum.partialQuery))
             return mapper;
@@ -405,7 +417,13 @@ public class SelectSqlBuilder extends AbstractTableSqlBuilder implements SelectB
         return getDbCategory().buildList(effectiveTableName, buildColumns(), getCompleteWhereExp());
     }
     
+    @SuppressWarnings("rawtypes")
     private String buildColumns() {
+        if(customized == ALL_COLUMNS) {
+            selectedColumns = ((DalParser)mapper).getColumnNames();
+            customized = null;
+        }
+        
         if(customized != null)
             return customized;
         

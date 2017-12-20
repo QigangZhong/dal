@@ -222,6 +222,30 @@ public class DalTableDaoTestStub extends BaseTestStub {
     }
     
     @Test
+    public void testQueryListAllColumns() throws SQLException{
+        SelectSqlBuilder builder = new SelectSqlBuilder().selectAllColumns();
+        
+        builder.equal("type", 1, Types.SMALLINT);
+        
+        List<ClientTestModel> models = dao.query(builder, new DalHints());
+        Assert.assertTrue(null != models);
+        Assert.assertEquals(3, models.size());
+        
+        
+        builder = new SelectSqlBuilder().selectAllColumns();
+        builder.equal("type", 1, Types.SMALLINT);
+        models = dao.query(builder.atPage(1, 1), new DalHints());
+        Assert.assertTrue(null != models);
+        Assert.assertEquals(1, models.size());
+        
+        builder = new SelectSqlBuilder().selectAllColumns();
+        builder.equal("type", 10, Types.SMALLINT);
+        models = dao.query(builder.atPage(1, 10), new DalHints());
+        Assert.assertTrue(null != models);
+        Assert.assertEquals(0, models.size());        
+    }
+    
+    @Test
     public void testQueryObjectList() throws SQLException{
         SelectSqlBuilder builder = new SelectSqlBuilder();
         builder.equal("type", 1, Types.SMALLINT);
@@ -261,6 +285,27 @@ public class DalTableDaoTestStub extends BaseTestStub {
         builder.equal("type", 10, Types.SMALLINT);
         builder.requireFirst();
         models = dao.queryObject(builder.atPage(1, 10), new DalHints(), Short.class);
+        Assert.assertNull(models);
+    }
+    
+    @Test
+    public void testQueryObjectAllColumns() throws SQLException{
+        SelectSqlBuilder builder = new SelectSqlBuilder().selectAllColumns();
+        builder.equal("type", 1, Types.SMALLINT);
+        builder.requireFirst();
+        ClientTestModel models = dao.queryObject(builder, new DalHints());
+        Assert.assertNotNull(models);
+        
+        builder = new SelectSqlBuilder().selectAllColumns();
+        builder.equal("type", 1, Types.SMALLINT);
+        builder.requireFirst();
+        models = dao.queryObject(builder.atPage(1, 1), new DalHints());
+        Assert.assertNotNull(models);
+        
+        builder = new SelectSqlBuilder().selectAllColumns();
+        builder.equal("type", 10, Types.SMALLINT);
+        builder.requireFirst();
+        models = dao.queryObject(builder.atPage(1, 10), new DalHints());
         Assert.assertNull(models);
     }
     
