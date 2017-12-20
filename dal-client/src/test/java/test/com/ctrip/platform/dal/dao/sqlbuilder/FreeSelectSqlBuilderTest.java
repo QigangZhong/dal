@@ -33,7 +33,7 @@ public class FreeSelectSqlBuilderTest {
     private static final String wrappedNoShardTableName = "[noShard]";
 
     private FreeSelectSqlBuilder createTest() {
-        return (FreeSelectSqlBuilder)new FreeSelectSqlBuilder(logicDbName).setHints(new DalHints());
+        return (FreeSelectSqlBuilder)new FreeSelectSqlBuilder().setLogicDbName(logicDbName).setHints(new DalHints());
     }
     
     @Test

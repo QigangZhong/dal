@@ -127,7 +127,7 @@ public final class DalQueryDao {
 		DalResultSetExtractor<T> extractor = builder.getResultExtractor(hints);
 		
 		DalSqlTaskRequest<T> request = new DalSqlTaskRequest<>(
-				logicDbName, builder.with(parameters), hints, new QuerySqlTask<>(extractor), merger);
+				logicDbName, builder.setLogicDbName(logicDbName).with(parameters), hints, new QuerySqlTask<>(extractor), merger);
 		
 		return executor.execute(hints, request, builder.isNullable());
 	}

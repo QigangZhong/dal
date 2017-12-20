@@ -1,8 +1,6 @@
 package test.com.ctrip.platform.dal.dao.shard;
 
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.like;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -137,7 +135,7 @@ public abstract class DalQueryDaoTest {
         String address = null;
         Integer id = 1;
         
-        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>(logicDbName);
+        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>();
 
         query.selectAll().from(TABLE_NAME).where(like("address ").nullable(address), AND, equal("id").nullable(id));
 
@@ -157,7 +155,7 @@ public abstract class DalQueryDaoTest {
         String address = null;
         Integer id = 1;
         
-        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>(logicDbName);
+        FreeSelectSqlBuilder<List<ClientTestModel>> query = new FreeSelectSqlBuilder<>();
 
         query.selectAll().from(TABLE_NAME).where(like("address ").when(address!=null), AND, equal("id").when(id!=null));
 
@@ -329,7 +327,48 @@ public abstract class DalQueryDaoTest {
 				hints.shardBy("type"));
 	}
 	 
-	@Test
+     // Test in parameters
+	 private List<Short> queryListForInParamBuilderNew(DalHints hints) throws SQLException {
+	     StatementParameters parameters = new StatementParameters();
+         FreeSelectSqlBuilder<List<Short>> builder = new FreeSelectSqlBuilder<>(dbCategory);
+         builder.with(parameters);
+
+	     List<Integer> inParam = new ArrayList<>();
+	     inParam.add(0);
+	     inParam.add(1);
+	     inParam.add(2);
+	     inParam.add(3);
+	     inParam.add(4);
+	     
+	     builder.setIn("type", Types.INTEGER, inParam);
+	     builder.setTemplate(sqlInParam);
+	     builder.mapWith(new ShortRowMapper());
+	     return dao.query(
+	             builder, parameters,
+	             hints.shardBy("type"));
+	 }
+  
+     // Test in parameters
+     private List<Short> queryListForInParamBuilderNew1(DalHints hints) throws SQLException {
+         StatementParameters parameters = new StatementParameters();
+         FreeSelectSqlBuilder<List<Short>> builder = new FreeSelectSqlBuilder<>();
+         builder.with(parameters);
+
+         List<Integer> inParam = new ArrayList<>();
+         inParam.add(0);
+         inParam.add(1);
+         inParam.add(2);
+         inParam.add(3);
+         inParam.add(4);
+         
+         builder.selectAll().from(TABLE_NAME).where(in("type", Types.INTEGER, inParam));
+         builder.mapWith(new ShortRowMapper());
+         return dao.query(
+                 builder, parameters,
+                 hints.shardBy("type"));
+     }
+
+	 @Test
 	public void testQueryListInParams() {
 		try {
 			DalHints hints = new DalHints();
@@ -436,13 +475,21 @@ public abstract class DalQueryDaoTest {
 		}
 	}
 		
-	 
 	@Test
 	public void testQueryListInParamsBuilder() {
 		try {
 			DalHints hints = new DalHints();
 			List<Short> result = queryListForInParamBuilder(hints);
 			assertEquals(6, result.size());
+
+            hints = new DalHints();
+            result = queryListForInParamBuilderNew(hints);
+            assertEquals(6, result.size());
+		
+            hints = new DalHints();
+            result = queryListForInParamBuilderNew1(hints);
+            assertEquals(6, result.size());
+        
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail();
@@ -477,6 +524,17 @@ public abstract class DalQueryDaoTest {
 			assertEquals(6, result.size());
 			assertEquals(new Short((short)3), t);
 			
+			hints = new DalHints();
+            result = queryListForInParamBuilderNew(hints.mergeBy(new TestResultMerger()));
+            t = result.get(0);
+            assertEquals(6, result.size());
+            assertEquals(new Short((short)3), t);
+            
+            hints = new DalHints();
+            result = queryListForInParamBuilderNew1(hints.mergeBy(new TestResultMerger()));
+            t = result.get(0);
+            assertEquals(6, result.size());
+            assertEquals(new Short((short)3), t);
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail();

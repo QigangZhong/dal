@@ -39,13 +39,16 @@ public class FreeSelectSqlBuilder<K> extends AbstractFreeSqlBuilder implements S
 	private int count;
 	private int start;
 
+	
+	/**
+	 * @Deprecated you should use FreeSelectSqlBuilder() instead
+	 * @param dbCategory
+	 */
 	public FreeSelectSqlBuilder(DatabaseCategory dbCategory) {
 		setDbCategory(dbCategory);
 	}
 	
-    public FreeSelectSqlBuilder(String logicDbName) {
-        setLogicDbName(logicDbName);
-    }
+	public FreeSelectSqlBuilder(){}
     
 	/**
 	 * If there is IN parameter, no matter how many values in the IN clause, the IN clause only need to 
