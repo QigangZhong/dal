@@ -64,10 +64,15 @@ public enum ErrorCode {
 	KeyGenerationFailOrNotCompleted(ErrorClassify.Validate, 5105, "The insertion is fail or not completed yet."),
 	
 	/**
-	 * The insertion is fail or not completed yet.
+	 * There is no field defined in pojo
 	 */
 	FieldNotExists(ErrorClassify.Validate, 5106, "There is no field defined in pojo %s for column %s. Please check with DalHintEnum.ignoreMissingFields"),
 	
+    /**
+     * Can not put generated primary key back to pojo
+     */
+    SetPrimaryKeyFailed(ErrorClassify.Validate, 5107, "Can not put generated primary key back to pojo %s for column %s"),
+    
 	/**
 	 * Sql cannot be null
 	 */

@@ -359,6 +359,11 @@ public class DalHints {
 		set(DalHintEnum.enableIdentityInsert);
 		return this;
 	}
+	
+    public DalHints insertIdentityBack() {
+        set(DalHintEnum.insertIdentityBack);
+        return this;
+    }
 
 	public boolean isIdentityInsertDisabled() {
 		return !is(DalHintEnum.enableIdentityInsert);
