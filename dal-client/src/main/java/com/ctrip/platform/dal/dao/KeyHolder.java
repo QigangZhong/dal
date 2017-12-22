@@ -193,9 +193,8 @@ public class KeyHolder {
         EntityManager em = EntityManager.getEntityManager(rawPojos.get(0).getClass());
         if(em.getPrimaryKeyNames().length == 0)
             throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
-        String pkName = em.getPrimaryKeyNames()[0];
-        
-        Field pkFlield = em.getFieldMap().get(pkName);
+
+        Field pkFlield = em.getFieldMap().get(em.getPrimaryKeyNames()[0]);
         
         if(pkFlield == null)
             throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
