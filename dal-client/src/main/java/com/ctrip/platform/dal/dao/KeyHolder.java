@@ -1,5 +1,6 @@
 package com.ctrip.platform.dal.dao;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ctrip.platform.dal.dao.helper.EntityManager;
 import com.ctrip.platform.dal.exceptions.DalException;
 import com.ctrip.platform.dal.exceptions.ErrorCode;
 
@@ -170,4 +172,62 @@ public class KeyHolder {
 		
 		merged.set(true);
 	}
+	
+	public static void insertKeyBack(DalHints hints, List<?> rawPojos) throws SQLException {
+	    Integer[] indexList = new Integer[rawPojos.size()];
+	    for(int i = 0; i < indexList.length; i++)
+	        indexList[i] = i;
+	    
+	    insertKeyBack(hints, rawPojos, indexList);
+	}
+
+    public static void insertKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList) throws SQLException {
+        KeyHolder keyHolder = hints.getKeyHolder();
+        
+        if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
+            return;
+        
+        if(!(hints.is(DalHintEnum.insertIdentityBack) && hints.isIdentityInsertDisabled()))
+            return;
+        
+        EntityManager em = EntityManager.getEntityManager(rawPojos.get(0).getClass());
+        if(em.getPrimaryKeyNames().length == 0)
+            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
+        String pkName = em.getPrimaryKeyNames()[0];
+        
+        Field pkFlield = em.getFieldMap().get(pkName);
+        
+        if(pkFlield == null)
+            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
+        
+        for(Integer index: indexList)
+            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
+    }
+    
+    /**
+     * Only support number type and auto incremental id is one column
+     * @throws SQLException
+     */
+    private static void setPrimaryKey(Field pkFlield, Object entity, Number val) throws SQLException {
+        try {
+            if (pkFlield.getType().equals(Long.class) || pkFlield.getType().equals(long.class)) {
+                pkFlield.set(entity, val.longValue());
+                return;
+            }
+            if (pkFlield.getType().equals(Integer.class) || pkFlield.getType().equals(int.class)) {
+                pkFlield.set(entity, val.intValue());
+                return;
+            }
+            if (pkFlield.getType().equals(Byte.class) || pkFlield.getType().equals(byte.class)) {
+                pkFlield.set(entity, val.byteValue());
+                return;
+            }
+            if (pkFlield.getType().equals(Short.class) || pkFlield.getType().equals(short.class)) {
+                pkFlield.set(entity, val.shortValue());
+                return;
+            }
+        } catch (Throwable e) {
+            throw new DalException(ErrorCode.SetPrimaryKeyFailed, entity.getClass().getName(), pkFlield.getName());
+        }
+    }	
 }

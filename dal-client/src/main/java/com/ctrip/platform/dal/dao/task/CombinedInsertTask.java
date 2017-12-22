@@ -68,7 +68,7 @@ public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkT
 		
 		hints.setKeyHolder(keyHolder);
 		
-	    insertKeyBack(hints, taskContext, indexList, keyHolder);
+		KeyHolder.insertKeyBack(hints, taskContext.getRawPojos(), indexList);
 		
 		return count;
 	}
@@ -78,17 +78,20 @@ public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkT
 		return new ShardedIntResultMerger();
 	}
 	
-	protected void insertKeyBack(DalHints hints, BulkTaskContext<T> context, Integer[] indexList, KeyHolder keyHolder) throws SQLException {
+	public static void insertKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList, KeyHolder keyHolder, String pkName) throws SQLException {
 	    if(keyHolder == null)
 	        return;
 	    
 	    if(!(hints.is(DalHintEnum.insertIdentityBack) && hints.isIdentityInsertDisabled()))
 	        return;
 	    
-	    Class<T> pojoClass = (Class<T>)context.getRawPojos().get(0).getClass();
-        Field pkFlield = EntityManager.getEntityManager(pojoClass).getFieldMap().get(parser.getPrimaryKeyNames()[0]);
+	    Class pojoClass = rawPojos.get(0).getClass();
+        Field pkFlield = EntityManager.getEntityManager(pojoClass).getFieldMap().get(pkName);
+        if(pkFlield == null)
+            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
+        
         for(Integer index: indexList) {
-            setPrimaryKey(pkFlield, context.getRawPojos().get(index), keyHolder.getKey(index));
+            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
         }
 	}
 	
@@ -96,7 +99,7 @@ public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkT
 	 * Only support number type
 	 * @throws SQLException
 	 */
-	private void setPrimaryKey(Field pkFlield, T entity, Number val) throws SQLException {
+	private static void setPrimaryKey(Field pkFlield, Object entity, Number val) throws SQLException {
         try {
             if (pkFlield.getType().equals(Long.class) || pkFlield.getType().equals(long.class)) {
                 pkFlield.set(entity, val.longValue());

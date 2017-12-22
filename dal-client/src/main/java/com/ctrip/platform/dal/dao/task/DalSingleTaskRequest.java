@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.ctrip.platform.dal.dao.DalHints;
+import com.ctrip.platform.dal.dao.KeyHolder;
 import com.ctrip.platform.dal.dao.ResultMerger;
 import com.ctrip.platform.dal.dao.client.LogContext;
 import com.ctrip.platform.dal.exceptions.DalException;
@@ -121,6 +122,10 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 					hints.handleError("Error when execute single pojo operation", e);
 				}
 			}
+			
+			if(task instanceof SingleInsertTaskType)
+			    KeyHolder.insertKeyBack(hints, rawPojos);
+			    
 			return counts;	
 		}
 	}

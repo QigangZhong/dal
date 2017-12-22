@@ -1,12 +1,12 @@
 package test.com.ctrip.platform.dal.dao.shard;
 
-import static test.com.ctrip.platform.dal.dao.unittests.DalTestHelper.deleteAllShardsByDb;
-import static test.com.ctrip.platform.dal.dao.unittests.DalTestHelper.getCountByDb;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static test.com.ctrip.platform.dal.dao.unittests.DalTestHelper.deleteAllShardsByDb;
+import static test.com.ctrip.platform.dal.dao.unittests.DalTestHelper.getCountByDb;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import test.com.ctrip.platform.dal.dao.unitbase.BaseTestStub.DatabaseDifference;
 
+import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalClientFactory;
 import com.ctrip.platform.dal.dao.DalHintEnum;
 import com.ctrip.platform.dal.dao.DalHints;
@@ -56,7 +57,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			DalClientFactory.initClientFactory();
 			DalParser<ClientTestModel> clientTestParser = new ClientTestDalParser(databaseName);
 			dao = new DalTableDao<ClientTestModel>(clientTestParser);
-			//ASSERT_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;
+//			ASSERT_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;
 			GENERATED_KEY = generatedKey;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -760,6 +761,51 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			assertEquals(3 + j++ * 1, getCountByDb(dao, i));
 		}
 	}
+	
+	   /**
+     * Test Insert multiple entities one by one
+     * @throws SQLException
+     */
+    @Test
+    public void testInsertSingleWithPkInsertBack() throws SQLException{
+        if(dao.getDatabaseCategory() != DatabaseCategory.MySql)
+            return;
+
+        ClientTestModel model = new ClientTestModel();
+        model.setQuantity(10 + 1%3);
+        model.setType(((Number)(1%3)).shortValue());
+        model.setAddress("CTRIP");
+        
+        int res;
+        for(int i = 0; i < mod; i++) {
+            int j = 1;
+            // By shard
+            model.setId(-1);
+            res = dao.insert(new DalHints().inShard(i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
+            assertTrue(model.getId() > 0);
+
+            // By shardValue
+            model.setId(-1);
+            res = dao.insert(new DalHints().setShardValue(i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
+            assertTrue(model.getId() > 0);
+
+            // By shardColValue
+            model.setId(-1);
+            res = dao.insert(new DalHints().setShardColValue("index", i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
+            assertTrue(model.getId() > 0);
+            
+            // By shardColValue
+            model.setId(-1);
+            dao.insert(new DalHints().setShardColValue("tableIndex", i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
+            assertTrue(model.getId() > 0);
+            
+            // By fields
+            model.setId(-1);
+            model.setTableIndex(i);
+            res = dao.insert(new DalHints().insertIdentityBack().setKeyHolder(new KeyHolder()), model);
+            assertTrue(model.getId() > 0);
+        }
+    }
 
 	private int getInt(DalHints hints) throws SQLException {
 		try {
@@ -970,6 +1016,54 @@ public abstract class BaseDalTableDaoShardByDbTest {
 		assertEquals(1, getCountByDb(dao, 1));
 	}
 	
+    /**
+     * Test Insert multiple entities one by one
+     * @throws SQLException
+     */
+    @Test
+    public void testInsertMultipleAsListWithPkInsertBack() throws SQLException{
+        if(dao.getDatabaseCategory() != DatabaseCategory.MySql)
+            return;
+
+        List<ClientTestModel> entities = new ArrayList<ClientTestModel>();
+        for (int i = 0; i < 3; i++) {
+            ClientTestModel model = new ClientTestModel();
+            model.setQuantity(10 + i%3);
+            model.setType(((Number)(i%3)).shortValue());
+            model.setAddress("CTRIP");
+            entities.add(model);
+        }
+
+        int[] res;
+
+        for(int i = 0; i < mod; i++) {
+            int j = 1;
+            // By shard
+            for(ClientTestModel model: entities) model.setId(-1);
+            res = dao.insert(new DalHints().inShard(i).insertIdentityBack().setKeyHolder(new KeyHolder()), entities);
+            for(ClientTestModel model: entities) assertTrue(model.getId() > 0);
+
+            // By fields same shard
+            for(ClientTestModel model: entities) model.setId(-1);
+            entities.get(0).setTableIndex(i);
+            entities.get(1).setTableIndex(i);
+            entities.get(2).setTableIndex(i);
+            res = dao.insert(new DalHints().insertIdentityBack().setKeyHolder(new KeyHolder()), entities);
+            for(ClientTestModel model: entities) assertTrue(model.getId() > 0);
+        }
+        
+        deleteAllShardsByDb(dao, mod);
+        
+        // By fields not same shard
+        entities.get(0).setTableIndex(0);
+        entities.get(1).setTableIndex(1);
+        entities.get(2).setTableIndex(2);
+        res = dao.insert(new DalHints().continueOnError(), entities);
+        assertResEquals(3, res);
+        assertEquals(2, getCountByDb(dao, 0));
+        assertEquals(1, getCountByDb(dao, 1));
+    }
+    
 	@Test
 	public void testInsertMultipleAsListAsyncCallback() throws SQLException{
 		DalHints hints;
