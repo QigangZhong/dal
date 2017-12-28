@@ -114,6 +114,8 @@ public class DalRequestExecutor {
 
 			if(result == null && !nullable)
 				throw new DalException(ErrorCode.AssertNull);
+			
+			request.endExecution();
 		} catch (Throwable e) {
 			error = e;
 		}

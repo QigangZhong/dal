@@ -98,6 +98,12 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 		return null;
 	}
 
+    @Override
+    public void endExecution() throws SQLException {
+        if(task instanceof KeyHolderAwaredTask)
+            KeyHolder.insertKeyBack(hints, rawPojos);            
+    }
+    
 	private static class SingleTaskCallable<T> implements Callable<int[]> {
 		private DalHints hints;
 		private List<Map<String, ?>> daoPojos;
@@ -122,10 +128,7 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 					hints.handleError("Error when execute single pojo operation", e);
 				}
 			}
-			
-			if(task instanceof SingleInsertTaskType)
-			    KeyHolder.insertKeyBack(hints, rawPojos);
-			    
+
 			return counts;	
 		}
 	}

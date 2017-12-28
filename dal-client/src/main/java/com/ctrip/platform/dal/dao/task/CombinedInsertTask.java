@@ -1,20 +1,15 @@
 package com.ctrip.platform.dal.dao.task;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.ctrip.platform.dal.dao.DalHintEnum;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.KeyHolder;
 import com.ctrip.platform.dal.dao.StatementParameters;
-import com.ctrip.platform.dal.dao.helper.EntityManager;
-import com.ctrip.platform.dal.exceptions.DalException;
-import com.ctrip.platform.dal.exceptions.ErrorCode;
 
-public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkTask<Integer, T> {
+public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkTask<Integer, T>, KeyHolderAwaredTask {
 	public static final String TMPL_SQL_MULTIPLE_INSERT = "INSERT INTO %s(%s) VALUES %s";
 
 	@Override
@@ -61,14 +56,11 @@ public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkT
 		
 		int count = client.update(sql, parameters, hints.setKeyHolder(tmpHolder));
 		
-		Integer[] indexList = daoPojos.keySet().toArray(new Integer[daoPojos.size()]);
 		if(tmpHolder != null) {
-			keyHolder.addPatial(indexList, tmpHolder);
+			keyHolder.addPatial(daoPojos.keySet().toArray(new Integer[daoPojos.size()]), tmpHolder);
 		}
 		
 		hints.setKeyHolder(keyHolder);
-		
-		KeyHolder.insertKeyBack(hints, taskContext.getRawPojos(), indexList);
 		
 		return count;
 	}
@@ -77,48 +69,4 @@ public class CombinedInsertTask<T> extends InsertTaskAdapter<T> implements BulkT
 	public BulkTaskResultMerger<Integer> createMerger() {
 		return new ShardedIntResultMerger();
 	}
-	
-	public static void insertKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList, KeyHolder keyHolder, String pkName) throws SQLException {
-	    if(keyHolder == null)
-	        return;
-	    
-	    if(!(hints.is(DalHintEnum.insertIdentityBack) && hints.isIdentityInsertDisabled()))
-	        return;
-	    
-	    Class pojoClass = rawPojos.get(0).getClass();
-        Field pkFlield = EntityManager.getEntityManager(pojoClass).getFieldMap().get(pkName);
-        if(pkFlield == null)
-            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
-        
-        for(Integer index: indexList) {
-            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
-        }
-	}
-	
-	/**
-	 * Only support number type
-	 * @throws SQLException
-	 */
-	private static void setPrimaryKey(Field pkFlield, Object entity, Number val) throws SQLException {
-        try {
-            if (pkFlield.getType().equals(Long.class) || pkFlield.getType().equals(long.class)) {
-                pkFlield.set(entity, val.longValue());
-                return;
-            }
-            if (pkFlield.getType().equals(Integer.class) || pkFlield.getType().equals(int.class)) {
-                pkFlield.set(entity, val.intValue());
-                return;
-            }
-            if (pkFlield.getType().equals(Byte.class) || pkFlield.getType().equals(byte.class)) {
-                pkFlield.set(entity, val.byteValue());
-                return;
-            }
-            if (pkFlield.getType().equals(Short.class) || pkFlield.getType().equals(short.class)) {
-                pkFlield.set(entity, val.shortValue());
-                return;
-            }
-        } catch (Throwable e) {
-            throw new DalException(ErrorCode.SetPrimaryKeyFailed, entity.getClass().getName(), pkFlield.getName());
-        }
-    }
 }

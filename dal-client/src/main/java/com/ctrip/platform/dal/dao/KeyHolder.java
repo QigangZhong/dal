@@ -174,14 +174,6 @@ public class KeyHolder {
 	}
 	
 	public static void insertKeyBack(DalHints hints, List<?> rawPojos) throws SQLException {
-	    Integer[] indexList = new Integer[rawPojos.size()];
-	    for(int i = 0; i < indexList.length; i++)
-	        indexList[i] = i;
-	    
-	    insertKeyBack(hints, rawPojos, indexList);
-	}
-
-    public static void insertKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList) throws SQLException {
         KeyHolder keyHolder = hints.getKeyHolder();
         
         if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
@@ -199,8 +191,8 @@ public class KeyHolder {
         if(pkFlield == null)
             throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
         
-        for(Integer index: indexList)
-            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
+        for(int i = 0; i < rawPojos.size(); i++)
+            setPrimaryKey(pkFlield, rawPojos.get(i), keyHolder.getKey(i));
     }
     
     /**

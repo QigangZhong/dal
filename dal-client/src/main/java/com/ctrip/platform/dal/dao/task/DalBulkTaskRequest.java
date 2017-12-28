@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.ctrip.platform.dal.dao.DalHints;
+import com.ctrip.platform.dal.dao.KeyHolder;
 import com.ctrip.platform.dal.dao.client.LogContext;
 import com.ctrip.platform.dal.exceptions.DalException;
 import com.ctrip.platform.dal.exceptions.ErrorCode;
@@ -127,6 +128,12 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 	@Override
 	public BulkTaskResultMerger<K> getMerger() {
 		return dbShardMerger;
+	}
+	
+	@Override
+    public void endExecution() throws SQLException {
+        if(task instanceof KeyHolderAwaredTask)
+            KeyHolder.insertKeyBack(hints, rawPojos);            
 	}
 	
 	private static class BulkTaskCallable<K, T> implements Callable<K> {

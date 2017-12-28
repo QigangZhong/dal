@@ -116,6 +116,11 @@ public class DalSqlTaskRequest<T> implements DalRequest<T>{
 		return merger;
 	}
 	
+    @Override
+    public void endExecution() {
+        
+    }
+    
 	private Set<String> getShards() throws SQLException {
 		Set<String> shards = null;
 		if(!DalShardingHelper.isShardingEnabled(logicDbName))
