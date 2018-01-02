@@ -8,7 +8,6 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-import test.com.ctrip.platform.dal.dao.task.ClientTestModelJpa;
 import test.com.ctrip.platform.dal.dao.unitbase.BaseTestStub;
 import test.com.ctrip.platform.dal.dao.unitbase.ClientTestModel;
 

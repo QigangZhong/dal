@@ -48,6 +48,7 @@ import com.ctrip.platform.dal.dao.sqlbuilder.SelectSqlBuilder;
 
 public abstract class BaseDalTableDaoShardByDbTest {
 	private boolean ASSERT_ALLOWED = false;
+	private boolean INSERT_PK_BACK_ALLOWED = false;
 	private DatabaseDifference diff;
 	private String databaseName;
 	public BaseDalTableDaoShardByDbTest(String databaseName, String generatedKey, DatabaseDifference diff) {
@@ -58,6 +59,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			DalParser<ClientTestModel> clientTestParser = new ClientTestDalParser(databaseName);
 			dao = new DalTableDao<ClientTestModel>(clientTestParser);
 //			ASSERT_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;
+			INSERT_PK_BACK_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;;
 			GENERATED_KEY = generatedKey;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -768,7 +770,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
      */
     @Test
     public void testInsertSingleWithPkInsertBack() throws SQLException{
-        if(dao.getDatabaseCategory() != DatabaseCategory.MySql)
+        if(!INSERT_PK_BACK_ALLOWED)
             return;
 
         ClientTestModel model = new ClientTestModel();
@@ -781,26 +783,35 @@ public abstract class BaseDalTableDaoShardByDbTest {
             int j = 1;
             // By shard
             model.setId(-1);
+            model.setAddress("CTRIP" + j++);
             res = dao.insert(new DalHints().inShard(i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
             assertTrue(model.getId() > 0);
+            assertEquals(dao.queryByPk(model, new DalHints().inShard(i)).getAddress(), model.getAddress());
 
             // By shardValue
             model.setId(-1);
+            model.setAddress("CTRIP" + j++);
             res = dao.insert(new DalHints().setShardValue(i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
             assertTrue(model.getId() > 0);
+            assertEquals(dao.queryByPk(model, new DalHints().setShardValue(i)).getAddress(), model.getAddress());
 
             // By shardColValue
             model.setId(-1);
+            model.setAddress("CTRIP" + j++);
             res = dao.insert(new DalHints().setShardColValue("index", i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
             assertTrue(model.getId() > 0);
+            assertEquals(dao.queryByPk(model, new DalHints().setShardColValue("index", i)).getAddress(), model.getAddress());
             
             // By shardColValue
             model.setId(-1);
+            model.setAddress("CTRIP" + j++);
             dao.insert(new DalHints().setShardColValue("tableIndex", i).insertIdentityBack().setKeyHolder(new KeyHolder()), model);
             assertTrue(model.getId() > 0);
+            assertEquals(dao.queryByPk(model, new DalHints().setShardColValue("tableIndex", i)).getAddress(), model.getAddress());
             
             // By fields
             model.setId(-1);
+            model.setAddress("CTRIP" + j++);
             model.setTableIndex(i);
             res = dao.insert(new DalHints().insertIdentityBack().setKeyHolder(new KeyHolder()), model);
             assertTrue(model.getId() > 0);
@@ -1022,7 +1033,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
      */
     @Test
     public void testInsertMultipleAsListWithPkInsertBack() throws SQLException{
-        if(dao.getDatabaseCategory() != DatabaseCategory.MySql)
+        if(!INSERT_PK_BACK_ALLOWED)
             return;
 
         List<ClientTestModel> entities = new ArrayList<ClientTestModel>();
@@ -2655,6 +2666,47 @@ public abstract class BaseDalTableDaoShardByDbTest {
 		assertEquals("CTRIP", dao.queryByPk(1, new DalHints().inShard(1)).getAddress());
 	}
 
+    private ClientTestModel[] create6Entities() {
+        ClientTestModel p;
+        ClientTestModel[] pList = new ClientTestModel[6];
+        p = new ClientTestModel();
+        p.setId(1);
+        p.setAddress("aaa");
+        p.setTableIndex(0);
+        pList[0] = p;
+        
+        p = new ClientTestModel();
+        p.setId(2);
+        p.setAddress("aaa");
+        p.setTableIndex(1);
+        pList[1] = p;
+        
+        p = new ClientTestModel();
+        p.setId(3);
+        p.setAddress("aaa");
+        p.setTableIndex(2);
+        pList[2] = p;
+        
+        p = new ClientTestModel();
+        p.setId(4);
+        p.setAddress("aaa");
+        p.setTableIndex(3);
+        pList[3] = p;
+        
+        p = new ClientTestModel();
+        p.setId(5);
+        p.setAddress("aaa");
+        p.setTableIndex(4);
+        pList[4] = p;
+        
+        p = new ClientTestModel();
+        p.setId(5);
+        p.setAddress("aaa");
+        p.setTableIndex(5);
+        pList[5] = p;
+        return pList;
+    }
+    
 	@Test
 	public void testCrossShardInsert() {
 		if(!diff.supportInsertValues)return;
@@ -2665,42 +2717,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			assertEquals(0, getCountByDb(dao, 0));
 			assertEquals(0, getCountByDb(dao, 1));
@@ -2718,6 +2735,41 @@ public abstract class BaseDalTableDaoShardByDbTest {
 		}
 	}
 
+    @Test
+    public void testCrossShardInsertPkInsertBack() {
+        if(!diff.supportInsertValues || !INSERT_PK_BACK_ALLOWED )return;
+        
+        try {
+            int res = 0;
+            deleteAllShardsByDb(dao, mod);
+            
+            ClientTestModel[] pList = create6Entities();
+            int i = 0;
+            for(ClientTestModel p: pList)
+                p.setAddress("aaa" + i++);
+            
+            assertEquals(0, getCountByDb(dao, 0));
+            assertEquals(0, getCountByDb(dao, 1));
+
+            KeyHolder keyholder = new KeyHolder();
+            DalHints hints = new DalHints();
+            res = dao.combinedInsert(hints.insertIdentityBack(), keyholder, Arrays.asList(pList));
+            assertResEquals(6, res);
+            assertEquals(3, getCountByDb(dao, 0));
+            assertEquals(3, getCountByDb(dao, 1));
+            assertKeyHolderCrossShard(keyholder);
+            
+            for(ClientTestModel p: pList) {
+                ClientTestModel p2 = dao.queryByPk(p, new DalHints());
+                assertEquals(p2.getAddress(), p.getAddress());
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
 	@Test
 	public void testCrossShardInsertAsync() {
 		if(!diff.supportInsertValues)return;
@@ -2728,42 +2780,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			assertEquals(0, getCountByDb(dao, 0));
 			assertEquals(0, getCountByDb(dao, 1));
@@ -2793,42 +2810,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			assertEquals(0, getCountByDb(dao, 0));
 			assertEquals(0, getCountByDb(dao, 1));
@@ -2871,42 +2853,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			DalHints hints = new DalHints();
 			int[] resx = dao.batchInsert(hints, Arrays.asList(pList));
@@ -2930,42 +2877,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			DalHints hints = new DalHints().asyncExecution();
 			int[] resx = dao.batchInsert(hints, Arrays.asList(pList));
@@ -2991,42 +2903,7 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			
 			ClientTestModel p = new ClientTestModel();
 			
-			ClientTestModel[] pList = new ClientTestModel[6];
-			p = new ClientTestModel();
-			p.setId(1);
-			p.setAddress("aaa");
-			p.setTableIndex(0);
-			pList[0] = p;
-			
-			p = new ClientTestModel();
-			p.setId(2);
-			p.setAddress("aaa");
-			p.setTableIndex(1);
-			pList[1] = p;
-			
-			p = new ClientTestModel();
-			p.setId(3);
-			p.setAddress("aaa");
-			p.setTableIndex(2);
-			pList[2] = p;
-			
-			p = new ClientTestModel();
-			p.setId(4);
-			p.setAddress("aaa");
-			p.setTableIndex(3);
-			pList[3] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(4);
-			pList[4] = p;
-			
-			p = new ClientTestModel();
-			p.setId(5);
-			p.setAddress("aaa");
-			p.setTableIndex(5);
-			pList[5] = p;
+			ClientTestModel[] pList = create6Entities();
 			
 			IntCallback callback = new IntCallback();
 			DalHints hints = new DalHints().callbackWith(callback);

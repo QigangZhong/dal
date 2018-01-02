@@ -34,15 +34,19 @@ import com.ctrip.platform.dal.dao.sqlbuilder.UpdateSqlBuilder;
 
 public abstract class BaseDalTabelDaoShardByTableTest {
 	private boolean ASSERT_ALLOWED = true;
+	private boolean INSERT_PK_BACK_ALLOWED = false;
 	private DatabaseDifference diff;
+	private String databaseName;
 	
 	public BaseDalTabelDaoShardByTableTest(String databaseName, DatabaseDifference diff) {
 		this.diff = diff;
 		try {
+		    this.databaseName = databaseName;
 			DalClientFactory.initClientFactory();
 			DalParser<ClientTestModel> clientTestParser = new ClientTestDalParser(databaseName);
 			dao = new DalTableDao<ClientTestModel>(clientTestParser);
 			ASSERT_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;
+            INSERT_PK_BACK_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1569,6 +1573,56 @@ public abstract class BaseDalTabelDaoShardByTableTest {
 //		assertTrue(holder.getKeyList().get(0).containsKey("GENERATED_KEYS"));
 	}
 	
+    @Test
+    public void testInsertMultipleAsListWithKeyHolderWithPkInsertBack() throws SQLException{
+        if(!INSERT_PK_BACK_ALLOWED)
+            return;
+        
+        DalTableDao<ClientTestModelJpa> dao = new DalTableDao<ClientTestModelJpa>(ClientTestModelJpa.class, databaseName, TABLE_NAME);
+        
+        List<ClientTestModelJpa> entities = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            ClientTestModelJpa model = new ClientTestModelJpa();
+            model.setQuantity(10 + 1%3);
+            model.setType(((Number)(1%3)).shortValue());
+            model.setAddress("CTRIP");
+            entities.add(model);
+        }
+
+
+        for(int i = 0; i < mod; i++) {
+            int j = 1;
+            KeyHolder holder = new KeyHolder();
+            for(ClientTestModelJpa model: entities) {
+                model.setAddress("CTRIP" + j++);
+            }
+            dao.insert(new DalHints().inTableShard(i).insertIdentityBack(), holder, entities);
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }
+        }
+        
+        deleteAllShards();
+        
+        // By fields not same shard
+        KeyHolder holder = new KeyHolder();
+        entities.get(0).setTableIndex(0);
+        entities.get(1).setTableIndex(1);
+        entities.get(2).setTableIndex(2);
+        int j = 0;
+        for(ClientTestModelJpa model: entities) {
+            model.setAddress("CTRIP" + j++);
+        }
+        dao.insert(new DalHints().insertIdentityBack(), holder, entities);
+        assertEquals(1, getCount(0));
+        assertEquals(1, getCount(1));
+        assertEquals(1, getCount(2));
+        
+        for(ClientTestModelJpa model: entities) {
+            assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
+        }
+    }
+    
 	@Test
 	public void testInsertMultipleAsListWithKeyHolderAsyncCallback() throws SQLException{
 		DalHints hints;
@@ -1658,6 +1712,62 @@ public abstract class BaseDalTabelDaoShardByTableTest {
 //		assertTrue(holder.getKeyList().get(0).containsKey("GENERATED_KEYS"));
 	}
 	
+    @Test
+    public void testInsertMultipleAsListWithKeyHolderAsyncCallbackWithPkInsertBack() throws SQLException{
+        DalHints hints;
+        DalTableDao<ClientTestModelJpa> dao = new DalTableDao<ClientTestModelJpa>(ClientTestModelJpa.class, databaseName, TABLE_NAME);
+        List<ClientTestModelJpa> entities = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            ClientTestModelJpa model = new ClientTestModelJpa();
+            model.setQuantity(10 + 1%3);
+            model.setType(((Number)(1%3)).shortValue());
+            model.setAddress("CTRIP" + i);
+            entities.add(model);
+        }
+
+        KeyHolder holder;
+        int[] res;
+
+        for(int i = 0; i < mod; i++) {
+            int j = 1;
+            holder = new KeyHolder();
+            // By tabelShard
+            // holder = new KeyHolder();
+            hints = asyncHints();
+            res = dao.insert(hints.inTableShard(i).insertIdentityBack(), holder, entities);
+            res = assertIntArray(res, hints);
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }
+
+            // By tableShardValue
+            holder = new KeyHolder();
+            hints = intHints();
+            res = dao.insert(hints.setTableShardValue(i).insertIdentityBack(), holder, entities);
+            res = assertIntArray(res, hints);
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }
+        }
+        
+        deleteAllShards();
+        
+        // By fields not same shard
+        holder = new KeyHolder();
+        entities.get(0).setTableIndex(0);
+        entities.get(1).setTableIndex(1);
+        entities.get(2).setTableIndex(2);
+        hints = intHints().insertIdentityBack();
+        res = dao.insert(hints, holder, entities);
+        res = assertIntArray(res, hints);
+        assertEquals(1, getCount(0));
+        assertEquals(1, getCount(1));
+        assertEquals(1, getCount(2));
+        for(ClientTestModelJpa model: entities) {
+            assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
+        }
+    }
+    	
 	/**
 	 * Test Insert multiple entities with one SQL Statement
 	 * @throws SQLException
@@ -1710,7 +1820,32 @@ public abstract class BaseDalTabelDaoShardByTableTest {
 		// For combined insert, the shard id must be defined or change bd deduced.
 	}
 	
-	@Test
+    @Test
+    public void testCombinedInsertWithPkInsertBack() throws SQLException{
+        if(!INSERT_PK_BACK_ALLOWED)return;
+        
+        DalTableDao<ClientTestModelJpa> dao = new DalTableDao<ClientTestModelJpa>(ClientTestModelJpa.class, databaseName, TABLE_NAME);
+        
+        ClientTestModelJpa[] entities = new ClientTestModelJpa[3];
+        for (int i = 0; i < 3; i++) {
+            ClientTestModelJpa model = new ClientTestModelJpa();
+            model.setQuantity(10 + 1%3);
+            model.setType(((Number)(1%3)).shortValue());
+            model.setAddress("CTRIP" + i);
+            entities[i] = model;
+        }
+        
+        for(int i = 0; i < mod; i++) {
+            KeyHolder holder = new KeyHolder();
+            dao.combinedInsert(new DalHints().inTableShard(i).insertIdentityBack(), holder, Arrays.asList(entities));
+            
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }            
+        }
+    }
+
+    @Test
 	public void testCombinedInsertAsyncCallback() throws SQLException{
 		if(!diff.supportInsertValues)return;
 		DalHints hints;
@@ -1769,6 +1904,47 @@ public abstract class BaseDalTabelDaoShardByTableTest {
 		// For combined insert, the shard id must be defined or change bd deduced.
 	}
 	
+    @Test
+    public void testCombinedInsertAsyncCallbackWithPkInsertBack() throws SQLException{
+        if(!INSERT_PK_BACK_ALLOWED)
+            return;
+        
+        DalTableDao<ClientTestModelJpa> dao = new DalTableDao<ClientTestModelJpa>(ClientTestModelJpa.class, databaseName, TABLE_NAME);
+        
+        ClientTestModelJpa[] entities = new ClientTestModelJpa[3];
+        for (int i = 0; i < 3; i++) {
+            ClientTestModelJpa model = new ClientTestModelJpa();
+            model.setQuantity(10 + 1%3);
+            model.setType(((Number)(1%3)).shortValue());
+            model.setAddress("CTRIP" + i);
+            entities[i] = model;
+        }
+        
+        int res;
+        
+        for(int i = 0; i < mod; i++) {
+            int j = 1;
+            KeyHolder holder = new KeyHolder();            
+            // By tabelShard
+            // holder = new KeyHolder();
+            DalHints hints = asyncHints();
+            res = dao.combinedInsert(hints.inTableShard(i).insertIdentityBack(), holder, Arrays.asList(entities));
+            res = assertInt(res, hints);
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }            
+            
+            // By tableShardValue
+            holder = new KeyHolder();
+            hints = intHints();
+            res = dao.combinedInsert(hints.setTableShardValue(i).insertIdentityBack(), holder, Arrays.asList(entities));
+            res = assertInt(res, hints);
+            for(ClientTestModelJpa model: entities) {
+                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
+            }            
+        }
+    }
+    
 	/**
 	 * Test Batch Insert multiple entities
 	 * @throws SQLException

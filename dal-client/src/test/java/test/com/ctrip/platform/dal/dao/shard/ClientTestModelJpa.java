@@ -1,10 +1,9 @@
-package test.com.ctrip.platform.dal.dao.task;
+package test.com.ctrip.platform.dal.dao.shard;
 
 import java.sql.Timestamp;
 import java.sql.Types;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -12,28 +11,32 @@ import javax.persistence.Id;
 import com.ctrip.platform.dal.dao.annotation.Database;
 import com.ctrip.platform.dal.dao.annotation.Type;
 
-@Database(name="123")
-@Entity(name="dal_client_test")
+// Not used actually
+@Database(name="ABC")
 public class ClientTestModelJpa {
     @Id
     @Column(name="id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Type(value=Types.INTEGER)
+    @Type(value=Types.BIGINT)
     private Integer id;
-    
+
     @Column(name="quantity")
     @Type(value=Types.INTEGER)
-    private Integer quan;
+    private Integer quantity;
+
+    @Column(name="tableIndex")
+    @Type(value=Types.INTEGER)
+    private Integer tableIndex;
     
-    @Column
+    @Column(name="type")
     @Type(value=Types.SMALLINT)
     private Short type;
     
-    @Column(length=50)
+    @Column(name="address")
     @Type(value=Types.VARCHAR)
     private String address;
     
-    @Column(nullable =false, insertable=false, name="last_changed")
+    @Column(name="last_changed")
     @Type(value=Types.TIMESTAMP)
     private Timestamp lastChanged;
 
@@ -41,23 +44,31 @@ public class ClientTestModelJpa {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 
     public Integer getQuantity() {
-        return quan;
+        return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
-        this.quan = quantity;
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
 
+    public Integer getTableIndex() {
+        return tableIndex;
+    }
+
+    public void setTableIndex(int tableIndex) {
+        this.tableIndex = tableIndex;
+    }
+    
     public Short getType() {
         return type;
     }
 
-    public void setType(Short type) {
+    public void setType(short type) {
         this.type = type;
     }
 

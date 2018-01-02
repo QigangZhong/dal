@@ -32,6 +32,7 @@ import com.ctrip.platform.dal.dao.helper.DefaultResultCallback;
 import com.ctrip.platform.dal.dao.sqlbuilder.UpdateSqlBuilder;
 
 public abstract class BaseDalTableDaoShardByDbTableTest {
+    private boolean INSERT_PK_BACK_ALLOWED = false;
 	public final static String TABLE_NAME = "dal_client_test";
 	public final static int mod = 2;
 	public final static int tableMod = 4;
@@ -46,6 +47,7 @@ public abstract class BaseDalTableDaoShardByDbTableTest {
 			DalParser<ClientTestModel> clientTestParser = new ClientTestDalParser(databaseName);
 			dao = new DalTableDao<ClientTestModel>(clientTestParser);
 			ASSERT_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;
+            INSERT_PK_BACK_ALLOWED = dao.getDatabaseCategory() == DatabaseCategory.MySql;;
 		} catch (Exception e) {
 			
 		}
