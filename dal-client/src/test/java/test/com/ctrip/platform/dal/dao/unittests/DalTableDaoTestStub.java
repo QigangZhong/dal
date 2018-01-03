@@ -439,7 +439,7 @@ public class DalTableDaoTestStub extends BaseTestStub {
             entities.add(model);
         }
         KeyHolder holder = new KeyHolder();
-        int[] res = dao.insert(new DalHints().insertIdentityBack(), holder, entities);
+        int[] res = dao.insert(new DalHints().setIdentityBack(), holder, entities);
         assertEquals(new int[]{1, 1, 1}, res, 4+3);
         Assert.assertEquals(3, holder.size());
         Assert.assertTrue(holder.getKeyList().get(0).containsKey("GENERATED_KEY"));
@@ -517,7 +517,7 @@ public class DalTableDaoTestStub extends BaseTestStub {
         }
         KeyHolder holder = diff.supportGetGeneratedKeys ? new KeyHolder() : null;
         DalHints hints = new DalHints();
-        int res = dao.combinedInsert(hints.insertIdentityBack(), holder, entities);
+        int res = dao.combinedInsert(hints.setIdentityBack(), holder, entities);
         assertEquals(3, res, 4+3);
         Assert.assertEquals(3, holder.size());
         Assert.assertTrue(holder.getKeyList().get(0).containsKey("GENERATED_KEY"));

@@ -211,9 +211,9 @@ public enum DalHintEnum {
 	enableIdentityInsert,
 	
     /**
-     * Insert generated incremental id back to the original pojo
+     * Set generated incremental id back to the original pojo
      */
-    insertIdentityBack,
+    setIdentityBack,
     
 	/**
 	 * Columns that will be excluded for update

@@ -101,7 +101,7 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
     @Override
     public void endExecution() throws SQLException {
         if(task instanceof KeyHolderAwaredTask)
-            KeyHolder.insertKeyBack(hints, rawPojos);            
+            KeyHolder.setGeneratedKeyBack(hints, rawPojos);            
     }
     
 	private static class SingleTaskCallable<T> implements Callable<int[]> {

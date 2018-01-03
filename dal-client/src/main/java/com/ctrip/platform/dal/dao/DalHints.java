@@ -360,8 +360,8 @@ public class DalHints {
 		return this;
 	}
 	
-    public DalHints insertIdentityBack() {
-        set(DalHintEnum.insertIdentityBack);
+    public DalHints setIdentityBack() {
+        set(DalHintEnum.setIdentityBack);
         return this;
     }
 

@@ -133,7 +133,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 	@Override
     public void endExecution() throws SQLException {
         if(task instanceof KeyHolderAwaredTask)
-            KeyHolder.insertKeyBack(hints, rawPojos);            
+            KeyHolder.setGeneratedKeyBack(hints, rawPojos);            
 	}
 	
 	private static class BulkTaskCallable<K, T> implements Callable<K> {

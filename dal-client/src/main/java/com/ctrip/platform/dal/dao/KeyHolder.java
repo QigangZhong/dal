@@ -173,13 +173,13 @@ public class KeyHolder {
 		merged.set(true);
 	}
 	
-	public static void insertKeyBack(DalHints hints, List<?> rawPojos) throws SQLException {
+	public static void setGeneratedKeyBack(DalHints hints, List<?> rawPojos) throws SQLException {
         KeyHolder keyHolder = hints.getKeyHolder();
         
         if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
             return;
         
-        if(!(hints.is(DalHintEnum.insertIdentityBack) && hints.isIdentityInsertDisabled()))
+        if(!(hints.is(DalHintEnum.setIdentityBack) && hints.isIdentityInsertDisabled()))
             return;
         
         EntityManager em = EntityManager.getEntityManager(rawPojos.get(0).getClass());
@@ -193,6 +193,29 @@ public class KeyHolder {
         
         for(int i = 0; i < rawPojos.size(); i++)
             setPrimaryKey(pkFlield, rawPojos.get(i), keyHolder.getKey(i));
+    }
+	
+
+    public static void setGeneratedKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList) throws SQLException {
+        KeyHolder keyHolder = hints.getKeyHolder();
+        
+        if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
+            return;
+        
+        if(!(hints.is(DalHintEnum.setIdentityBack) && hints.isIdentityInsertDisabled()))
+            return;
+        
+        EntityManager em = EntityManager.getEntityManager(rawPojos.get(0).getClass());
+        if(em.getPrimaryKeyNames().length == 0)
+            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
+
+        Field pkFlield = em.getFieldMap().get(em.getPrimaryKeyNames()[0]);
+        
+        if(pkFlield == null)
+            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
+        
+        for(Integer index: indexList)
+            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
     }
     
     /**

@@ -11,9 +11,8 @@ import javax.persistence.Id;
 import com.ctrip.platform.dal.dao.annotation.Database;
 import com.ctrip.platform.dal.dao.annotation.Type;
 
-// Not used actually
-@Database(name="ABC")
-public class ClientTestModelJpa {
+@Database(name="Foo")
+public class ClientTestModel {
     @Id
     @Column(name="id")
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -24,6 +23,10 @@ public class ClientTestModelJpa {
     @Type(value=Types.INTEGER)
     private Integer quantity;
 
+    @Column(name="dbIndex")
+    @Type(value=Types.INTEGER)
+    private Integer dbIndex;
+    
     @Column(name="tableIndex")
     @Type(value=Types.INTEGER)
     private Integer tableIndex;
@@ -56,11 +59,19 @@ public class ClientTestModelJpa {
         this.quantity = quantity;
     }
 
+    public Integer getDbIndex() {
+        return dbIndex;
+    }
+
+    public void setDbIndex(Integer dbIndex) {
+        this.dbIndex = dbIndex;
+    }
+    
     public Integer getTableIndex() {
         return tableIndex;
     }
 
-    public void setTableIndex(int tableIndex) {
+    public void setTableIndex(Integer tableIndex) {
         this.tableIndex = tableIndex;
     }
     

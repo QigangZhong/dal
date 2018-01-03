@@ -65,7 +65,7 @@ public class CombinedInsertTaskTestStub extends TaskTestStub {
         CombinedInsertTask<ClientTestModel> test = new CombinedInsertTask<>();
         test.initialize(new ClientTestDalParser(getDbName()));
         
-        DalHints hints = new DalHints().insertIdentityBack();
+        DalHints hints = new DalHints().setIdentityBack();
         if(enableKeyHolder)
             hints.setKeyHolder(new KeyHolder());
         try {
