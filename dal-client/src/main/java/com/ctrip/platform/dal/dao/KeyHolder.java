@@ -3,19 +3,31 @@ package com.ctrip.platform.dal.dao;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ctrip.platform.dal.dao.helper.EntityManager;
+import com.ctrip.platform.dal.dao.task.DaoTask;
+import com.ctrip.platform.dal.dao.task.KeyHolderAwaredTask;
 import com.ctrip.platform.dal.exceptions.DalException;
 import com.ctrip.platform.dal.exceptions.ErrorCode;
 
+/**
+ * A helper class that will collect all generated keys for insert operation
+ * 
+ * @author jhhe
+ *
+ */
 public class KeyHolder {
+    public final static String NOT_SET = "NOT SET!!!";
 	private boolean requireMerge = false;
-	private int pojoListSize;
+	private int totalSize;
+	private AtomicInteger remainSize = new AtomicInteger();
 
 	private final Map<Integer, Map<String, Object>> allKeys = new ConcurrentHashMap<>();
 	private final List<Map<String, Object>> keyList = new LinkedList<Map<String, Object>>();
@@ -23,17 +35,28 @@ public class KeyHolder {
 	private AtomicBoolean merged = new AtomicBoolean(false);
 
 	/**
-	 * Indicate that merge is needed for cross shard case
+     * For internal use. Initialize all generated keys 
 	 * @param size
 	 */
-	public void setSize(int size) {
-		pojoListSize = size;
+	public void initialize(int size) {
+	    this.totalSize = size;
+		remainSize.set(size);
+		
+//        if(!(allKeys.isEmpty() && keyList.isEmpty()))
+//            throw new IllegalStateException("Reuse of KeyHolder detected!");
+		allKeys.clear();
+		keyList.clear();
+		
+        for(int i = 0; i < size; i++) {
+            allKeys.put(i, createEmptyKeys());
+        }
 	}
 	
+	// TODO need to optimize this. it is really confusing
 	public int size() {
-		if(pojoListSize != 0)
-			return pojoListSize;
-		return keyList.size();
+        if(totalSize != 0)
+            return totalSize;
+        return keyList.size();
 	}
 	
 	/**
@@ -138,13 +161,79 @@ public class KeyHolder {
 		return (Number)key.values().iterator().next();
 	}
 	
+	private static boolean isKeyHolderRequired(DaoTask<?> task, KeyHolder holder) {
+        return task instanceof KeyHolderAwaredTask && holder != null;
+    }
+	
+    /**
+     * For internal use, add generated keys, for combined insert case
+     * @param key
+     */
+    public void addKeys(List<Map<String, Object>> keys) {
+        keyList.addAll(keys);
+    }
+    
 	/**
-	 * For internal use, add key in a dedicate shard
+	 * For internal use, add a generated key for single insert case
 	 * @param key
 	 */
 	public void addKey(Map<String, Object> key) {
 		keyList.add(key);
 	}
+
+	public static DalHints prepareLocalHints(DaoTask<?> task, DalHints hints) {
+        // To avoid shard id being polluted by each pojos
+        DalHints localHints = hints.clone();
+        
+        if(isKeyHolderRequired(task, hints.getKeyHolder()))
+            localHints.setKeyHolder(new KeyHolder());
+        
+        return localHints;
+    }
+
+	public static void mergePartial(DaoTask<?> task, KeyHolder originalHolder, Integer[] indexList, KeyHolder localHolder, Throwable error) throws SQLException {
+        if(!isKeyHolderRequired(task, originalHolder))
+            return;
+        
+        if(error == null)
+            originalHolder.addPatial(indexList, localHolder);
+        else
+            originalHolder.patialFailed(indexList.length);
+
+    }
+
+	public static void mergePartial(DaoTask<?> task, KeyHolder originalHolder, KeyHolder localHolder, Throwable error) throws SQLException {
+	    if(!isKeyHolderRequired(task, originalHolder))
+	        return;
+	    
+        if(error == null)
+            originalHolder.addKey(localHolder.getKeys());
+        else
+            originalHolder.singleFail();
+    }
+
+	/**
+     * For internal use, add a generated key 
+     * @param key
+     */
+    private void singleFail() {
+        keyList.add(createEmptyKeys());
+    }
+    
+    private Map<String, Object> createEmptyKeys() {
+        HashMap<String, Object> emptyKeys = new HashMap<>();
+        emptyKeys.put(NOT_SET, null);
+
+        return emptyKeys;
+    }
+
+    /**
+     * For internal use. Indicate how many partial pojo insert failed 
+     * @param indexList
+     */
+    private void patialFailed(int partialSize) {
+        deduct(partialSize);
+    }
 	
 	/**
 	 * For internal use. Add partial generated keys, it will only be invoked for cross shard combine insert case 
@@ -158,9 +247,13 @@ public class KeyHolder {
 		}
 		
 		// All partial is added, start merge generated keys
-		if(pojoListSize == allKeys.size())
-			merge();
+		deduct(indexList.length);
 	}
+
+    private void deduct(int size) {
+        if(remainSize.addAndGet(-size) == 0)
+			merge();
+    }
 	
 	private synchronized void merge() {
 		if(merged.get())
@@ -173,7 +266,10 @@ public class KeyHolder {
 		merged.set(true);
 	}
 	
-	public static void setGeneratedKeyBack(DalHints hints, List<?> rawPojos) throws SQLException {
+	public static void setGeneratedKeyBack(DaoTask<?> task, DalHints hints, List<?> rawPojos) throws SQLException {
+	    if(!(task instanceof KeyHolderAwaredTask))
+	        return;
+	        
         KeyHolder keyHolder = hints.getKeyHolder();
         
         if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
@@ -195,35 +291,16 @@ public class KeyHolder {
             setPrimaryKey(pkFlield, rawPojos.get(i), keyHolder.getKey(i));
     }
 	
-
-    public static void setGeneratedKeyBack(DalHints hints, List<?> rawPojos, Integer[] indexList) throws SQLException {
-        KeyHolder keyHolder = hints.getKeyHolder();
-        
-        if(keyHolder == null || rawPojos == null || rawPojos.isEmpty())
-            return;
-        
-        if(!(hints.is(DalHintEnum.setIdentityBack) && hints.isIdentityInsertDisabled()))
-            return;
-        
-        EntityManager em = EntityManager.getEntityManager(rawPojos.get(0).getClass());
-        if(em.getPrimaryKeyNames().length == 0)
-            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
-
-        Field pkFlield = em.getFieldMap().get(em.getPrimaryKeyNames()[0]);
-        
-        if(pkFlield == null)
-            throw new IllegalArgumentException("insertIdentityBack only support JPA POJO. Please use code gen to regenerate your POJO");
-        
-        for(Integer index: indexList)
-            setPrimaryKey(pkFlield, rawPojos.get(index), keyHolder.getKey(index));
-    }
-    
     /**
      * Only support number type and auto incremental id is one column
      * @throws SQLException
      */
     private static void setPrimaryKey(Field pkFlield, Object entity, Number val) throws SQLException {
         try {
+            if(val == null) {
+                pkFlield.set(entity, null);
+                return;
+            }
             if (pkFlield.getType().equals(Long.class) || pkFlield.getType().equals(long.class)) {
                 pkFlield.set(entity, val.longValue());
                 return;

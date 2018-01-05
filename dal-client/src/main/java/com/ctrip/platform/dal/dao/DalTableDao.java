@@ -587,14 +587,14 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	
 	private DalHints setSize(DalHints hints, KeyHolder keyHolder, List<T> pojos) {
 		if(keyHolder != null && pojos != null)
-			keyHolder.setSize(pojos.size());
+			keyHolder.initialize(pojos.size());
 		
 		return hints.setKeyHolder(keyHolder);
 	}
 
 	private DalHints setSize(DalHints hints, KeyHolder keyHolder, T pojo) {
 		if(keyHolder != null && pojo != null)
-			keyHolder.setSize(1);
+			keyHolder.initialize(1);
 		
 		return hints.setKeyHolder(keyHolder);
 	}

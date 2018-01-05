@@ -1,5 +1,7 @@
 package test.com.ctrip.platform.dal.dao.unittests;
 
+import static org.junit.Assert.assertEquals;
+
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -395,6 +397,37 @@ public class DalTableDaoTestStub extends BaseTestStub {
 		assertEquals(new int[]{1,0,1}, res, 4+2);
 	}
 	
+    @Test
+    public void testInsertMultipleAsListWithContinueOnErrorHintsWithKeholder() throws SQLException{
+        if(!diff.supportGetGeneratedKeys)
+            return;
+        
+        DalTableDao<ClientTestModelJpa> dao = new DalTableDao(new DalDefaultJpaParser<>(ClientTestModelJpa.class, dbName));
+        List<ClientTestModelJpa> entities = new ArrayList<ClientTestModelJpa>();
+        for (int i = 0; i < 3; i++) {
+            ClientTestModelJpa model = new ClientTestModelJpa();
+            model.setQuantity(10 + 1%3);
+            model.setType(((Number)(1%3)).shortValue());
+            if(i==1){
+                model.setAddress("CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+                        + "CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+                        + "CTRIPCTRIPCTRIPCTRIP");
+            }
+            else{
+                model.setAddress("CTRIP");
+            }
+            entities.add(model);
+        }
+        
+        DalHints hints = new DalHints(DalHintEnum.continueOnError).setKeyHolder(new KeyHolder()).setIdentityBack();
+        int[] res = dao.insert(hints, entities);
+        assertEquals(new int[]{1,0,1}, res, 4+2);
+        for(ClientTestModelJpa model: entities) {
+            if(model.getId()!=null)
+                Assert.assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
+        }        
+    }
+    
 	/**
 	 * Test Insert multiple entities with key-holder
 	 * @throws SQLException

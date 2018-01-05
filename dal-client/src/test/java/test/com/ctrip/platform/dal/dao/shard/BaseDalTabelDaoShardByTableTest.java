@@ -1126,7 +1126,7 @@ public abstract class BaseDalTabelDaoShardByTableTest {
 		try {
 			res = dao.insert(new DalHints(), model);
 			fail();
-		} catch (Exception e) {
+		} catch (Throwable e) {
 		}
 		
 		for(int i = 0; i < mod; i++) {
@@ -1588,13 +1588,9 @@ public abstract class BaseDalTabelDaoShardByTableTest {
         for(int i = 0; i < mod; i++) {
             int j = 1;
             KeyHolder holder = new KeyHolder();
-            for(ClientTestModel model: entities) {
-                model.setAddress("CTRIP" + j++);
-            }
+            IdentitySetBackHelper.clearId(entities);
             dao.insert(new DalHints().inTableShard(i).setIdentityBack(), holder, entities);
-            for(ClientTestModel model: entities) {
-                assertEquals(dao.queryByPk(model, new DalHints().inTableShard(i)).getAddress(), model.getAddress());    
-            }
+            IdentitySetBackHelper.assertIdentityTableShard(dao, entities, i);
         }
         
         deleteAllShards();
@@ -1604,18 +1600,12 @@ public abstract class BaseDalTabelDaoShardByTableTest {
         entities.get(0).setTableIndex(0);
         entities.get(1).setTableIndex(1);
         entities.get(2).setTableIndex(2);
-        int j = 0;
-        for(ClientTestModel model: entities) {
-            model.setAddress("CTRIP" + j++);
-        }
+        IdentitySetBackHelper.clearId(entities);
         dao.insert(new DalHints().setIdentityBack(), holder, entities);
         assertEquals(1, getCount(0));
         assertEquals(1, getCount(1));
         assertEquals(1, getCount(2));
-        
-        for(ClientTestModel model: entities) {
-            assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
-        }
+        IdentitySetBackHelper.assertIdentity(dao, entities);
     }
     
 	@Test

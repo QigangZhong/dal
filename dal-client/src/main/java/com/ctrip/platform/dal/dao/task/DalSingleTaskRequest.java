@@ -1,5 +1,8 @@
 package com.ctrip.platform.dal.dao.task;
 
+import static com.ctrip.platform.dal.dao.KeyHolder.mergePartial;
+import static com.ctrip.platform.dal.dao.KeyHolder.prepareLocalHints;
+import static com.ctrip.platform.dal.dao.KeyHolder.setGeneratedKeyBack;
 import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.detectDistributedTransaction;
 
 import java.sql.SQLException;
@@ -9,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.ctrip.platform.dal.dao.DalHints;
-import com.ctrip.platform.dal.dao.KeyHolder;
 import com.ctrip.platform.dal.dao.ResultMerger;
 import com.ctrip.platform.dal.dao.client.LogContext;
 import com.ctrip.platform.dal.exceptions.DalException;
@@ -100,8 +102,7 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 
     @Override
     public void endExecution() throws SQLException {
-        if(task instanceof KeyHolderAwaredTask)
-            KeyHolder.setGeneratedKeyBack(hints, rawPojos);            
+        setGeneratedKeyBack(task, hints, rawPojos);            
     }
     
 	private static class SingleTaskCallable<T> implements Callable<int[]> {
@@ -120,13 +121,18 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 		@Override
 		public int[] call() throws Exception {
 			int[] counts = new int[daoPojos.size()];
-			DalHints localHints = hints.clone();// To avoid shard id being polluted by each pojos
 			for (int i = 0; i < daoPojos.size(); i++) {
+			    Throwable error = null;
+			    DalHints localHints = prepareLocalHints(task, hints);
+			    
 				try {
 					counts[i] = task.execute(localHints, daoPojos.get(i), rawPojos.get(i));
-				} catch (SQLException e) {
-					hints.handleError("Error when execute single pojo operation", e);
+				} catch (Throwable e) {
+				    error = e;
 				}
+				
+				mergePartial(task, hints.getKeyHolder(), localHints.getKeyHolder(), error);
+                hints.handleError("Error when execute single pojo operation", error);
 			}
 
 			return counts;	

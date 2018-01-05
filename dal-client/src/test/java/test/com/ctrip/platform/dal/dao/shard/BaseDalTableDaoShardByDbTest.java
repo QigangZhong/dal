@@ -1297,6 +1297,21 @@ public abstract class BaseDalTableDaoShardByDbTest {
 			assertResEquals(2, res);
 			assertResEquals(2, res);
 			assertEquals(3 + j++ * 2, getCountByDb(dao, i));
+			
+			if(INSERT_PK_BACK_ALLOWED) {
+	            // By fields same shard
+	            hints = new DalHints().asyncExecution().setIdentityBack().setKeyHolder(new KeyHolder());
+	            entities.get(0).setTableIndex(i);
+	            entities.get(1).setTableIndex(i);
+	            entities.get(2).setTableIndex(i);
+	            res = dao.insert(hints.continueOnError(), entities);
+	            assertNull(res);
+	            res = getIntArray(hints);
+	            assertResEquals(2, res);
+	            assertResEquals(2, res);
+	            assertEquals(3 + j++ * 2, getCountByDb(dao, i));
+	            IdentitySetBackHelper.assertIdentityWithError(dao, entities);
+			}
 		}
 		
 		deleteAllShardsByDb(dao, mod);

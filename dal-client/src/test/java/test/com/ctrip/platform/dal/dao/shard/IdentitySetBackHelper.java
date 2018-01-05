@@ -26,10 +26,51 @@ public class IdentitySetBackHelper {
         }        
     }
     
+    public static void assertIdentityTableShard(DalTableDao<ClientTestModel> dao, List<ClientTestModel> entities, int tableShardId) throws SQLException {
+        for(ClientTestModel model: entities) {
+            assertEquals(dao.queryByPk(model, new DalHints().inTableShard(tableShardId)).getAddress(), model.getAddress());    
+        }        
+    }
+    
     public static void assertIdentity(DalTableDao<ClientTestModel> dao, List<ClientTestModel> entities) throws SQLException {
         for(ClientTestModel model: entities) {
             assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
         }        
+    }
+    
+    public static void assertIdentityWithError(DalTableDao<ClientTestModel> dao, List<ClientTestModel> entities) throws SQLException {
+        for(ClientTestModel model: entities) {
+            if(model.getId() != null)
+                assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
+        }        
+    }
+    
+    public static void assertIdentityWithError(DalTableDao<ClientTestModel> dao, DalHints hints, List<ClientTestModel> entities) throws SQLException {
+        if(hints.is(DalHintEnum.resultCallback))
+            for(ClientTestModel model: entities) {
+                if(model.getId() != null)
+                    assertTrue(model.getId() > 0);
+            }
+        else
+            if(hints.isAsyncExecution()){
+                for(ClientTestModel model: entities) {
+                    dao.queryByPk(model, hints);
+                    ClientTestModel p2;
+                    try {
+                        p2 = hints.getResult();
+                        if(p2 != null)
+                            assertEquals(dao.queryByPk(model, hints).getAddress(), model.getAddress());    
+                        assertEquals(p2.getAddress(), model.getAddress());    
+                    } catch (Exception e) {
+                        fail();
+                    }
+                }
+            }else {
+                for(ClientTestModel model: entities) {
+                    if(model.getId() != null)
+                        assertEquals(dao.queryByPk(model, hints).getAddress(), model.getAddress());    
+                }        
+            }
     }
     
     public static void assertIdentity(DalTableDao<ClientTestModel> dao, DalHints hints, List<ClientTestModel> entities) throws SQLException {
