@@ -71,7 +71,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
             }
         }
         
-        append(Expressions.rightBracket, VALUES, Expressions.bracket(text(valueFields)));
+        append(Expressions.rightBracket, text(VALUES), Expressions.bracket(text(valueFields.toString())));
         
         return this;
     }

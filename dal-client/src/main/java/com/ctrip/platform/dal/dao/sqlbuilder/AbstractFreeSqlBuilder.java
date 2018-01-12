@@ -108,8 +108,17 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         return context.getParameters().buildParameters();
     }
     
-    public static Text text(Object template) {
-        return new Text(template.toString());
+    public static Text text(String template) {
+        return new Text(template);
+    }
+    
+    public static Clause texts(String...templates) {
+        ClauseList clauses = new ClauseList();
+        for (int i = 0; i < templates.length; i++) {
+            clauses.add(column(templates[i]));
+        }
+        
+        return clauses;
     }
     
     public static Keyword keyword(String keyword) {
@@ -123,6 +132,21 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      */
     public static Column column(String columnName) {
         return new Column(columnName);
+    }
+    
+    /**
+     * Turn string array into column clauses
+     * 
+     * @param columnNames
+     * @return
+     */
+    public static Clause columns(String... columnNames) {
+        ClauseList clauses = new ClauseList();
+        for (int i = 0; i < columnNames.length; i++) {
+            clauses.add(column(columnNames[i]));
+        }
+        
+        return clauses;
     }
     
     /**
@@ -206,24 +230,12 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * Basic append method. Parameter value can be String, Clause or Object. It will allow the maximal
      * flexibility for input parameter.
      * 
-     * @param template
+     * @param template String
      * @return builder itself
      */
-    public AbstractFreeSqlBuilder append(Object template) {
-        Objects.requireNonNull(template, "Parameter template should be type of String, Clause, or Object, exceptnull.");
-
-        if(template instanceof String) {
-            add(new Text((String)template));
-        } else if(template instanceof ClauseList) {
-            for(Clause c: ((ClauseList)template).getList())
-                add(c);
-        } else if(template instanceof Clause) {
-            add((Clause)template);
-        } else {
-            add(new Text(template.toString()));
-        }
-
-        return this;
+    public AbstractFreeSqlBuilder append(String template) {
+        Objects.requireNonNull(template, "Parameter template is NULL.");
+        return append(text(template));
     }
     
     /**
@@ -233,7 +245,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * sql in a very flexible way. Usage like:
      * 
      * append(
-     *          "orderId > ?"
+     *          text("orderId > ?")
      *          AND,
      *          leftBracket,
      *          NOT, equals("Abc"),
@@ -245,9 +257,11 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param templates
      * @return
      */
-    public AbstractFreeSqlBuilder append(Object... templates) {
-        for(Object template: templates)
-            append(template);
+    public AbstractFreeSqlBuilder append(Clause... templates) {
+        for(Clause template: templates) {
+            add(template);
+        }
+
         return this;
     }
     
@@ -257,7 +271,17 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param template
      * @return
      */
-    public AbstractFreeSqlBuilder appendWhen(boolean condition, Object template) {
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, String template) {
+        return appendWhen(condition, text(template));
+    }
+    
+    /**
+     * Append when the condition is met
+     * @param condition
+     * @param template
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, Clause template) {
         return condition ? append(template): this;
     }
     
@@ -268,7 +292,18 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param elseTemplate value to be appended when condition is true
      * @return
      */
-    public AbstractFreeSqlBuilder appendWhen(boolean condition, Object template, Object elseTemplate) {
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, String template, String elseTemplate) {
+        return appendWhen(condition, text(template), text(elseTemplate));
+    }
+    
+    /**
+     * Append template depends on whether the condition is met.
+     * @param condition
+     * @param template value to be appended when condition is true
+     * @param elseTemplate value to be appended when condition is true
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, Clause template, Clause elseTemplate) {
         return condition ? append(template): append(elseTemplate);
     }
     
@@ -327,28 +362,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     public AbstractFreeSqlBuilder appendExpression(String expression) {
         return append(new Expression(expression));
     }
-    
-    /**
-     * Append multiple expressions. Same as append(Object..values) except all 
-     * String parameters will be wrapped by Expression instead of Text.
-     * 
-     * Note: The String parameter will be wrapped by Expression clause.
-     * 
-     * @param expressions
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendExpressions(Object...expressions) {
-        for(Object expr: expressions) {
-            if(expr instanceof String) {
-                appendExpression((String)expr);
-            }else {
-                append(expr);
-            }
-        }
 
-        return this;
-    }
-    
     /**
      * Combined append for SELECT
      */
@@ -362,15 +376,18 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param table
      * @return
      */
-    public AbstractFreeSqlBuilder select(Object... columnNames) {
+    public AbstractFreeSqlBuilder select(String... columnNames) {
+        return select(columns(columnNames));
+    }
+    
+    public AbstractFreeSqlBuilder select(Clause... columnNames) {
         append(SELECT);
-        for (int i = 0; i < columnNames.length; i++) {
-            if(columnNames[i] instanceof String) {
-                appendColumn((String)columnNames[i]);
-            }else{
-                append(columnNames[i]);
-            }
-            if(i != columnNames.length -1)
+        ClauseList clauses = new ClauseList();
+        clauses.add(columnNames);
+        int size = clauses.getList().size();
+        for (int i = 0; i < size; i++) {
+            append(columnNames[i]);
+            if(i != size -1)
                 append(COMMA);    
         }
 
@@ -413,8 +430,6 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Append WHERE alone with expressions.
      * 
-     * Note: The String parameter will be wrapped by Expression.
-     * 
      * If you want to append 1=1 at the beginning, please use where(includeAll()) 
      * or if you want to select nothing if there is no valid record, please 
      * use where(excludeAll());
@@ -422,8 +437,8 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param expressions
      * @return
      */
-    public AbstractFreeSqlBuilder where(Object...expressions) {
-        return append(WHERE).appendExpressions(expressions);
+    public AbstractFreeSqlBuilder where(Clause...expressions) {
+        return append(WHERE).append(expressions);
     }
     
     /**
@@ -486,13 +501,11 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Append multiple expression into ().
      * 
-     * Note: The String parameter will be wrapped by Expression.
-     * 
      * @param expressions
      * @return
      */
-    public AbstractFreeSqlBuilder bracket(Object... expressions) {
-        return leftBracket().appendExpressions(expressions).rightBracket();
+    public AbstractFreeSqlBuilder bracket(Clause... expressions) {
+        return leftBracket().append(expressions).rightBracket();
     }
     
     public AbstractFreeSqlBuilder and() {
@@ -510,14 +523,12 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Join multiple expression with AND.
      * 
-     * Note: The String parameter will be wrapped by Expression.
-     * 
      * @param expressions
      * @return
      */
-    public AbstractFreeSqlBuilder and(Object... expressions) {
+    public AbstractFreeSqlBuilder and(Clause... expressions) {
         for (int i = 0; i < expressions.length; i++) {
-            appendExpr(expressions[i]);
+            append(expressions[i]);
             if(i != expressions.length -1)
                 and();    
         }
@@ -528,30 +539,17 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Join multiple expression with OR.
      * 
-     * Note: The String parameter will be wrapped by Expression.
-     * 
      * @param expressions
      * @return
      */
-    public AbstractFreeSqlBuilder or(Object... expressions) {
+    public AbstractFreeSqlBuilder or(Clause... expressions) {
         for (int i = 0; i < expressions.length; i++) {
-            appendExpr(expressions[i]);
+            append(expressions[i]);
             if(i != expressions.length -1)
                 or();    
         }
         
         return this;
-    }
-    
-    private void appendExpr(Object expr) {
-        Objects.requireNonNull(expr, "Parameter can not be null");
-        
-        if(expr instanceof String) {
-            appendExpression((String)expr);
-        }else if (expr instanceof Exception){
-            append(expr);
-        } else
-            throw new IllegalArgumentException("Parameter must be Expression or String");
     }
     
     /**

@@ -30,9 +30,14 @@ public class ClauseList extends Clause {
     
     public ClauseList add(Clause... clauses) {
         for(Clause c: clauses) {
-            c.setContext(context);
-            c.postAppend();
-            list.add(c);
+            if(c instanceof ClauseList) {
+                for(Clause clause: ((ClauseList)c).getList())
+                    add(clause);
+            }else{
+                c.setContext(context);
+                c.postAppend();
+                list.add(c);
+            }
         }
         return this;
     }
