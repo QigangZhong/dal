@@ -879,13 +879,13 @@ public class SelectSqlBuilderTest {
         
         builder.selectCount();
         
-        builder.and().like("b", "in", MatchPattern.none, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.head, Types.INTEGER);
-        builder.and().likeNullable("b", null, MatchPattern.none, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.tail, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.both, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.USER_DEFINED, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.END_WITH, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.USER_DEFINED, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.BEGIN_WITH, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.CONTAINS, Types.INTEGER);
         builder.and().like("b", "in", Types.INTEGER);
-        builder.and().likeNullable("b", null, MatchPattern.both, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.CONTAINS, Types.INTEGER);
         builder.orderBy("PeopleID", false);
         
         builder.requireFirst();
@@ -920,13 +920,13 @@ public class SelectSqlBuilderTest {
         
         builder.selectCount();
         
-        builder.and().like("b", "in", MatchPattern.none, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.head, Types.INTEGER);
-        builder.and().likeNullable("b", null, MatchPattern.none, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.tail, Types.INTEGER);
-        builder.and().like("b", "in", MatchPattern.both, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.USER_DEFINED, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.END_WITH, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.USER_DEFINED, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.BEGIN_WITH, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.CONTAINS, Types.INTEGER);
         builder.and().like("b", "in", Types.INTEGER);
-        builder.and().likeNullable("b", null, MatchPattern.both, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.CONTAINS, Types.INTEGER);
         builder.orderBy("PeopleID", false);
         
         builder.from("People").setDatabaseCategory(DatabaseCategory.SqlServer);

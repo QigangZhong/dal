@@ -1,5 +1,6 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.*;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.AND;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
@@ -125,7 +126,7 @@ public class FreeSelectSqlBuilderTest {
     @Test
     public void testBuildSelect() throws SQLException {
         FreeSelectSqlBuilder test = createTest();
-        test.select(template, template, template).from(tableName).where(template).groupBy(template);
+        test.select(template, template, template).from(tableName).where(text(template)).groupBy(template);
         test.top(10).setHints(new DalHints().inTableShard(1));
         assertEquals("SELECT [template], [template], [template] FROM [dal_client_test_1] WITH (NOLOCK) WHERE template GROUP BY [template] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY", test.build());
     }
@@ -133,11 +134,11 @@ public class FreeSelectSqlBuilderTest {
     @Test
     public void testBuildMeltdownAtEnd() throws SQLException {
         FreeSelectSqlBuilder test = createTest();
-        test.where(template, AND, expression(template).nullable(null)).groupBy(template);
+        test.where(text(template), AND, expression(template).nullable(null)).groupBy(template);
         assertEquals("WHERE template GROUP BY [template]", test.build());
         
         test = createTest();
-        test.where(template).and().appendExpression(template).nullable(null).groupBy(template);
+        test.where(text(template)).and().appendExpression(template).nullable(null).groupBy(template);
         assertEquals("WHERE template GROUP BY [template]", test.build());
     }
     

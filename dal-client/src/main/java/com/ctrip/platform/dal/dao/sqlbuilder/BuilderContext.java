@@ -16,7 +16,7 @@ public class BuilderContext {
     private String logicDbName;
     private DatabaseCategory dbCategory;
     private DalHints hints;
-    private StatementParameters parameters;
+    private StatementParameters parameters = new StatementParameters();
 
     public DatabaseCategory getDbCategory() {
         return dbCategory;

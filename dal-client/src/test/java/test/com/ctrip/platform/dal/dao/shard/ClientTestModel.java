@@ -17,7 +17,7 @@ public class ClientTestModel {
     @Column(name="id")
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Type(value=Types.BIGINT)
-    private Integer id;
+    private volatile Integer id;
 
     @Column(name="quantity")
     @Type(value=Types.INTEGER)
@@ -47,7 +47,7 @@ public class ClientTestModel {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

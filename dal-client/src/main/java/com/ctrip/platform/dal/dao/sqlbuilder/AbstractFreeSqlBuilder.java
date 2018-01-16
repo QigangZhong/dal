@@ -4,11 +4,11 @@ import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.buildShardStr;
 import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.isTableShardingEnabled;
 import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.locateTableShardId;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractTableSqlBuilder.wrapField;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expressions;
 
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHints;
@@ -17,16 +17,15 @@ import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.ColumnExpression;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 /**
- * This sql builder only handles template creation. It will not do with the parameters
- * for now.
+ * A very flexible SQL builder that can build complete SQL alone with parameters.
+ * It allows user add nullable or conditional expressions. The null expression 
+ * may be auto removed during build process. And it will also remove needed operator and bracket
+ * to make the final sql correct. 
  * 
- * rules:
+ * There are certain rules that you need to know about: 
  * if bracket has no content, bracket will be removed
  * expression can be evaluated and can be wrapped by bracket and connect to each other by and/or
  * expression should have no leading and tailing and/or, it there is, the and/or will be removed during validating
- * 
- * To be align with FreeSelectSqlBuilder and FreeUpdateSqlBuilder, this class will not handle methods that dealing with 
- * some parameter. To deal with parameter, you should use Expressions.*
  * 
  * @author jhhe
  *
@@ -112,10 +111,10 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         return new Text(template);
     }
     
-    public static Clause texts(String...templates) {
+    public static ClauseList texts(String... templates) {
         ClauseList clauses = new ClauseList();
         for (int i = 0; i < templates.length; i++) {
-            clauses.add(column(templates[i]));
+            clauses.add(text(templates[i]));
         }
         
         return clauses;
@@ -127,23 +126,23 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     
     /**
      * Create Column clause with given name
-     * @param columnName
+     * @param name
      * @return
      */
-    public static Column column(String columnName) {
-        return new Column(columnName);
+    public static Column column(String name) {
+        return new Column(name);
     }
     
     /**
      * Turn string array into column clauses
      * 
-     * @param columnNames
+     * @param names
      * @return
      */
-    public static Clause columns(String... columnNames) {
+    public static ClauseList columns(String... names) {
         ClauseList clauses = new ClauseList();
-        for (int i = 0; i < columnNames.length; i++) {
-            clauses.add(column(columnNames[i]));
+        for (int i = 0; i < names.length; i++) {
+            clauses.add(column(names[i]));
         }
         
         return clauses;
@@ -168,56 +167,62 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     
     /**
      * Set parameter
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder set(String name, int sqlType, Object value) {
+    public AbstractFreeSqlBuilder set(String name, Object value, int sqlType) {
         context.getParameters().set(nextIndex(), name, sqlType, value);
         return this;
     }
     
     /**
      * Set parameter when value is not null
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder setNullable(String name, int sqlType, Object value) {
-        return set(value != null, name, sqlType, value);
+    public AbstractFreeSqlBuilder setNullable(String name, Object value, int sqlType) {
+        return set(value != null, name, value, sqlType);
     }
     
     /**
      * Set parameter when condition is satisfied
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder set(boolean condition, String name, int sqlType, Object value) {
-        set(name, sqlType, value);
+    public AbstractFreeSqlBuilder set(boolean condition, String name, Object value, int sqlType) {
+        set(name, value, sqlType);
         getParameters().when(condition);
         return this;
     }
     
     /**
      * Set in parameter
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder setIn(String name, int sqlType, List<?> values) throws SQLException {
+    public AbstractFreeSqlBuilder setIn(String name, List<?> values, int sqlType) throws SQLException {
         context.getParameters().setInParameter(nextIndex(), name, sqlType, values);
         return this;
     }
     
     /**
      * Set in parameter when value is not null and all its elements are not null
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder setInNullable(String name, int sqlType, List<?> values) throws SQLException {
-        setIn(name, sqlType, values);
+    public AbstractFreeSqlBuilder setInNullable(String name, List<?> values, int sqlType) throws SQLException {
+        setIn(name, values, sqlType);
         getParameters().nullable();
         return this;
     }
     
     /**
      * Set in parameter when condition is satisfied
+     * 
      * @param sqlType java.sql.Types
      */
-    public AbstractFreeSqlBuilder setIn(boolean condition, String name, int sqlType, List<?> values) throws SQLException {
-        setIn(name, sqlType, values);
+    public AbstractFreeSqlBuilder setIn(boolean condition, String name, List<?> values, int sqlType) throws SQLException {
+        setIn(name, values, sqlType);
         getParameters().when(condition);
         return this;
     }
@@ -233,9 +238,8 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param template String
      * @return builder itself
      */
-    public AbstractFreeSqlBuilder append(String template) {
-        Objects.requireNonNull(template, "Parameter template is NULL.");
-        return append(text(template));
+    public AbstractFreeSqlBuilder append(String...templates) {
+        return append(texts(templates));
     }
     
     /**
@@ -308,24 +312,44 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * Append as column. The column name will be quoted by database specific char.
+     * Append templates with separator
      * 
-     * @param columnNames 
+     * @param separator
+     * @param templates
      * @return
      */
-    public AbstractFreeSqlBuilder appendColumn(String columnName) {
-        return append(column(columnName));
+    public AbstractFreeSqlBuilder appendWith(Clause separator, Clause... templates) {
+        ClauseList clauses = new ClauseList(templates);
+        List<Clause> clauseList = clauses.getList();
+        int size = clauseList.size();
+        for (Clause clause: clauseList) {
+            append(clause);
+            if(--size > 0)
+                append(separator);    
+        }
+
+        return this;
+    }
+    
+    /**
+     * Append as column. The column name will be quoted by database specific char.
+     * 
+     * @param names 
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendColumn(String name) {
+        return append(column(name));
     }
     
     /**
      * Append as column with alias. The column name will be quoted by database specific char.
      * 
-     * @param columnNames 
+     * @param names 
      * @param alias
      * @return
      */
-    public AbstractFreeSqlBuilder appendColumn(String columnName, String alias) {
-        return append(column(columnName).as(alias));
+    public AbstractFreeSqlBuilder appendColumn(String name, String alias) {
+        return append(column(name).as(alias));
     }
     
     /**
@@ -364,34 +388,34 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
 
     /**
-     * Combined append for SELECT
+     * Append a SELECT
      */
-
+    public AbstractFreeSqlBuilder select() {
+        return append(SELECT);
+    }
+    
     /**
-     * Build a SELECT column1, column2,...using the giving columnNames
+     * Build a SELECT column1, column2,...using the giving names
      * 
-     * Note: The String parameter will be wrapped by Column clause.
+     * Note: The text value will be wrapped by Column clause.
+     * 
+     * @param names
+     * @param table
+     * @return
+     */
+    public AbstractFreeSqlBuilder select(String... names) {
+        return select(columns(names));
+    }
+    
+    /**
+     * Build a SELECT column1, column2,...using the giving names
      * 
      * @param columns The type of column can be Column or other clause
      * @param table
      * @return
      */
-    public AbstractFreeSqlBuilder select(String... columnNames) {
-        return select(columns(columnNames));
-    }
-    
-    public AbstractFreeSqlBuilder select(Clause... columnNames) {
-        append(SELECT);
-        ClauseList clauses = new ClauseList();
-        clauses.add(columnNames);
-        int size = clauses.getList().size();
-        for (int i = 0; i < size; i++) {
-            append(columnNames[i]);
-            if(i != size -1)
-                append(COMMA);    
-        }
-
-        return this;
+    public AbstractFreeSqlBuilder select(Clause... columns) {
+        return append(SELECT).appendWith(COMMA, columns);
     }
     
     /**
@@ -416,7 +440,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * Append FROM and table for query. And if logic DB is sql server, it will 
+     * Append FROM and table for query. And if logic DB is MS Sql Server, it will 
      * append "WITH (NOLOCK)" by default 
      * 
      * @param columns The type of column can be Column or other clause
@@ -425,6 +449,29 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      */
     public AbstractFreeSqlBuilder from(Table table) {
         return append(FROM).append(table).append(new SqlServerWithNoLock());
+    }
+    
+    /**
+     * Append WHERE
+     * @return
+     */
+    public AbstractFreeSqlBuilder where() {
+        return append(WHERE);
+    }
+            
+    /**
+     * Append WHERE alone with expressions. 
+     * The text value will be treated as Expression
+     * 
+     * If you want to append 1=1 at the beginning, please use where(includeAll()) 
+     * or if you want to select nothing if there is no valid record, please 
+     * use where(excludeAll());
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder where(String... expressions) {
+        return where(expressions(expressions));
     }
     
     /**
@@ -437,43 +484,43 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @param expressions
      * @return
      */
-    public AbstractFreeSqlBuilder where(Clause...expressions) {
+    public AbstractFreeSqlBuilder where(Clause... expressions) {
         return append(WHERE).append(expressions);
     }
     
     /**
-     * @return exprerssion TRUE and AND
+     * @return TRUE AND
      */
-    public static Object[] includeAll() {
-        return new Object[]{Expressions.TRUE, Expressions.AND};
+    public static Clause includeAll() {
+        return new ClauseList().add(Expressions.TRUE, Expressions.AND);
     }
     
     /**
-     * @return exprerssion FALSE and OR
+     * @return FALSE OR
      */
-    public static Object[] excludeAll() {
-        return new Object[]{Expressions.FALSE, Expressions.OR};
+    public static Clause excludeAll() {
+        return new ClauseList().add(Expressions.FALSE, Expressions.OR);
     }
     
     /**
      * Append ORDER BY with column name
      * 
-     * @param columnName
+     * @param name
      * @param ascending
      * @return
      */
-    public AbstractFreeSqlBuilder orderBy(String columnName, boolean ascending){
-        return append(ORDER_BY).append(column(columnName)).appendWhen(ascending, ASC, DESC);
+    public AbstractFreeSqlBuilder orderBy(String name, boolean ascending){
+        return append(ORDER_BY).append(column(name)).appendWhen(ascending, ASC, DESC);
     }
     
     /**
      * Append GROUP BY with column name
      * 
-     * @param columnName
+     * @param name
      * @return
      */
-    public AbstractFreeSqlBuilder groupBy(String columnName) {
-        return append(GROUP_BY).append(column(columnName));
+    public AbstractFreeSqlBuilder groupBy(String name) {
+        return append(GROUP_BY).append(column(name));
     }
     
     public AbstractFreeSqlBuilder groupBy(Clause condition) {
@@ -490,12 +537,33 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         return append(HAVING).append(condition);
     }
     
+    /**
+     * Append "("
+     * 
+     * @return
+     */
     public AbstractFreeSqlBuilder leftBracket() {
         return append(Expressions.leftBracket);
     }
 
+    /** Append ")"
+     * 
+     * @return
+     */
     public AbstractFreeSqlBuilder rightBracket() {
         return append(Expressions.rightBracket);
+    }
+    
+    /**
+     * Append multiple text as expressions into ().
+     * 
+     * The text value will be treated as Expression
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder bracket(String... expressions) {
+        return bracket(expressions(expressions));
     }
     
     /**
@@ -523,19 +591,36 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     /**
      * Join multiple expression with AND.
      * 
+     * The text value will be treated as Expression
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder and(String... expressions) {
+        return and(expressions(expressions));
+    }
+
+    /**
+     * Join multiple expression with AND.
+     * 
      * @param expressions
      * @return
      */
     public AbstractFreeSqlBuilder and(Clause... expressions) {
-        for (int i = 0; i < expressions.length; i++) {
-            append(expressions[i]);
-            if(i != expressions.length -1)
-                and();    
-        }
-        
-        return this;
+        return appendWith(Expressions.AND, expressions);
     }
 
+    /**
+     * Join multiple expression with OR.
+     * The text value will be treated as Expression
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder or(String... expressions) {
+        return or(expressions(expressions));
+    }
+    
     /**
      * Join multiple expression with OR.
      * 
@@ -543,17 +628,12 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder or(Clause... expressions) {
-        for (int i = 0; i < expressions.length; i++) {
-            append(expressions[i]);
-            if(i != expressions.length -1)
-                or();    
-        }
-        
-        return this;
+        return appendWith(Expressions.OR, expressions);
     }
     
     /**
-     * Mark last expression as valid expression when value is not null.
+     * Mark last expression as valid expression if given value is not null.
+     * 
      * @param value
      * @return
      */
@@ -563,7 +643,8 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * Mark last ColumnExpression as valid expression when value is not null.
+     * Mark last ColumnExpression as valid expression if expression's value is not null.
+     * 
      * @param value
      * @return
      */
@@ -579,6 +660,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
 
     /**
      * Mark last expression as valid expression that is to be used in builder when the condition is met.
+     * 
      * @param value
      * @return
      */
@@ -603,259 +685,318 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
 
     /**
      * Append = expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder equal(String columnName) {
-        return append(Expressions.equal(columnName));
+    public AbstractFreeSqlBuilder equal(String name) {
+        return append(Expressions.equal(name));
     }
     
     /**
      * Append = expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @param sqlType corresponding sql type of the value
+     * 
+     * @param name column name, can not be expression.
      * @param value the value of the expression
-     * @return
-     */
-    public AbstractFreeSqlBuilder equal(String columnName, int sqlType, Object value) {
-        return append(Expressions.equal(columnName, sqlType, value));
-    }
-    
-    /**
-     * Append <> expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @return
-     */
-    public AbstractFreeSqlBuilder notEqual(String columnName) {
-        return append(Expressions.notEqual(columnName));
-    }
-    
-    /**
-     * Append <> expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
      * @param sqlType corresponding sql type of the value
-     * @param value the value of the expression@return
+     * @return
      */
-    public AbstractFreeSqlBuilder notEqual(String columnName, int sqlType, Object value) {
-        return append(Expressions.notEqual(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder equal(String name, Object value, int sqlType) {
+        return append(Expressions.equal(name, value, sqlType));
+    }
+    
+    /**
+     * Append <> expression using the giving name, type and value
+     * 
+     * @param name column name, can not be expression.
+     * @return
+     */
+    public AbstractFreeSqlBuilder notEqual(String name) {
+        return append(Expressions.notEqual(name));
+    }
+    
+    /**
+     * Append <> expression using the giving name, type and value
+     * 
+     * @param name column name, can not be expression.
+     * @param value the value of the expression@return
+     * @param sqlType corresponding sql type of the value
+     */
+    public AbstractFreeSqlBuilder notEqual(String name, Object value, int sqlType) {
+        return append(Expressions.notEqual(name, value, sqlType));
     }
     
     /**
      * Append > expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder greaterThan(String columnName) {
-        return append(Expressions.greaterThan(columnName));
+    public AbstractFreeSqlBuilder greaterThan(String name) {
+        return append(Expressions.greaterThan(name));
     }
 
     /**
      * Append > expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @param sqlType corresponding sql type of the value
+     * 
+     * @param name column name, can not be expression.
      * @param value the value of the expression@return
+     * @param sqlType corresponding sql type of the value
      * @return
      */
-    public AbstractFreeSqlBuilder greaterThan(String columnName, int sqlType, Object value) {
-        return append(Expressions.greaterThan(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder greaterThan(String name, Object value, int sqlType) {
+        return append(Expressions.greaterThan(name, value, sqlType));
     }
 
     /**
      * Append >= expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder greaterThanEquals(String columnName) {
-        return append(Expressions.greaterThanEquals(columnName));
+    public AbstractFreeSqlBuilder greaterThanEquals(String name) {
+        return append(Expressions.greaterThanEquals(name));
     }
 
     /**
      * Append >= expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @param sqlType corresponding sql type of the value
+     * 
+     * @param name column name, can not be expression.
      * @param value the value of the expression
+     * @param sqlType corresponding sql type of the value
      * @return
      */
-    public AbstractFreeSqlBuilder greaterThanEquals(String columnName, int sqlType, Object value) {
-        return append(Expressions.greaterThanEquals(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder greaterThanEquals(String name, Object value, int sqlType) {
+        return append(Expressions.greaterThanEquals(name, value, sqlType));
     }
 
     /**
      * Append < expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder lessThan(String columnName) {
-        return append(Expressions.lessThan(columnName));
+    public AbstractFreeSqlBuilder lessThan(String name) {
+        return append(Expressions.lessThan(name));
     }
 
     /**
      * Append < expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @param sqlType corresponding sql type of the value
+     * 
+     * @param name column name, can not be expression.
      * @param value the value of the expression
+     * @param sqlType corresponding sql type of the value
      * @return
      */
-    public AbstractFreeSqlBuilder lessThan(String columnName, int sqlType, Object value) {
-        return append(Expressions.lessThan(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder lessThan(String name, Object value, int sqlType) {
+        return append(Expressions.lessThan(name, value, sqlType));
     }
 
     /**
      * Append <= expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder lessThanEquals(String columnName) {
-        return append(Expressions.lessThanEquals(columnName));
+    public AbstractFreeSqlBuilder lessThanEquals(String name) {
+        return append(Expressions.lessThanEquals(name));
     }
 
     /**
      * Append <= expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
-     * @param sqlType corresponding sql type of the value
+     * 
+     * @param name column name, can not be expression.
      * @param value the value of the expression
+     * @param sqlType corresponding sql type of the value
      * @return
      */
-    public AbstractFreeSqlBuilder lessThanEquals(String columnName, int sqlType, Object value) {
-        return append(Expressions.lessThanEquals(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder lessThanEquals(String name, Object value, int sqlType) {
+        return append(Expressions.lessThanEquals(name, value, sqlType));
     }
 
     /**
      * Append BETWEEN expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder between(String columnName) {
-        return append(Expressions.between(columnName));
+    public AbstractFreeSqlBuilder between(String name) {
+        return append(Expressions.between(name));
     }
     
     /**
      * Append BETWEEN expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
+     * @param lowerValue the lower value of the expression
+     * @param upperValue the upper value of the expression
      * @param sqlType corresponding sql type of the value
-     * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder between(String columnName, int sqlType, Object lowerValue, Object upperValue) {
-        return append(Expressions.between(columnName, sqlType, lowerValue, upperValue));
+    public AbstractFreeSqlBuilder between(String name, Object lowerValue, Object upperValue, int sqlType) {
+        return append(Expressions.between(name, lowerValue, upperValue, sqlType));
     }
     
     /**
      * Append NOT BETWEEN expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder notBetween(String columnName) {
-        return append(Expressions.notBetween(columnName));
+    public AbstractFreeSqlBuilder notBetween(String name) {
+        return append(Expressions.notBetween(name));
     }
     
     /**
      * Append NOT BETWEEN expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
+     * @param lowerValue the lower value of the expression
+     * @param upperValue the upper value of the expression
      * @param sqlType corresponding sql type of the value
-     * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder notBetween(String columnName, int sqlType, Object lowerValue, Object upperValue) {
-        return append(Expressions.notBetween(columnName, sqlType, lowerValue, upperValue));
+    public AbstractFreeSqlBuilder notBetween(String name, Object lowerValue, Object upperValue, int sqlType) {
+        return append(Expressions.notBetween(name, lowerValue, upperValue, sqlType));
     }
     
     /**
      * Append LIKE expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder like(String columnName) {
-        return append(Expressions.like(columnName));
+    public AbstractFreeSqlBuilder like(String name) {
+        return append(Expressions.like(name));
     }
     
     /**
-     * Append LIKE expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * Append LIKE expression using the giving name, type and value.
+     * 
+     * IMPORTANT NOTE: This method does not add % to any position of value, you need to add % manually in the value
+     * You can use like with MatchPattern to indicate dal add % for you.
+     * 
+     * @param name column name, can not be expression.
      * @param sqlType corresponding sql type of the value
      * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder like(String columnName, int sqlType, Object value) {
-        return append(Expressions.like(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder like(String name, String value, int sqlType) {
+        return append(Expressions.like(name, value, sqlType));
+    }
+    
+    /**
+     * Append LIKE expression using the giving name, , pattern, value and type
+     * 
+     * @param name column name, can not be expression.
+     * @param pattern match pattern
+     * @param value the value of the expression
+     * @param sqlType corresponding sql type of the value
+     * @return
+     */
+    public AbstractFreeSqlBuilder like(String name, String value, MatchPattern pattern, int sqlType) {
+        return append(Expressions.like(name, value, pattern, sqlType));
     }
 
     /**
-     * Append BOT LIKE expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * Append NOT LIKE expression using the giving name
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder notLike(String columnName) {
-        return append(Expressions.notLike(columnName));
+    public AbstractFreeSqlBuilder notLike(String name) {
+        return append(Expressions.notLike(name));
     }
     
     /**
-     * Append BOT LIKE expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * Append NOT LIKE expression using the giving name, type and value
+     * 
+     * IMPORTANT NOTE: This method does not add % to any position of value, you need to add % manually in the value
+     * You can use notLike with MatchPattern to indicate dal add % for you.
+     * 
+     * @param name column name, can not be expression.
      * @param sqlType corresponding sql type of the value
      * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder notLike(String columnName, int sqlType, Object value) {
-        return append(Expressions.notLike(columnName, sqlType, value));
+    public AbstractFreeSqlBuilder notLike(String name, String value, int sqlType) {
+        return append(Expressions.notLike(name, value, sqlType));
+    }
+    
+    /**
+     * Append NOT LIKE expression using the giving name, pattern, value and type
+     * 
+     * @param name column name, can not be expression.
+     * @param sqlType corresponding sql type of the value
+     * @param pattern match pattern
+     * @param value the value of the expression
+     * @return
+     */
+    public AbstractFreeSqlBuilder notLike(String name, String value, MatchPattern pattern, int sqlType) {
+        return append(Expressions.notLike(name, value, pattern, sqlType));
     }
     
     /**
      * Append IN expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder in(String columnName) {
-        return append(Expressions.in(columnName));
+    public AbstractFreeSqlBuilder in(String name) {
+        return append(Expressions.in(name));
     }
     
     /**
      * Append IN expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
+     * @param values the value of the expression
      * @param sqlType corresponding sql type of the value
-     * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder in(String columnName, int sqlType, Collection<?> values) {
-        return append(Expressions.in(columnName, sqlType, values));
+    public AbstractFreeSqlBuilder in(String name, Collection<?> values, int sqlType) {
+        return append(Expressions.in(name, values, sqlType));
     }
     
     /**
      * Append NOT IN expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder notIn(String columnName) {
-        return append(Expressions.notIn(columnName));
+    public AbstractFreeSqlBuilder notIn(String name) {
+        return append(Expressions.notIn(name));
     }
     
     /**
      * Append NOT IN expression using the giving name, type and value
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
+     * @param values the value of the expression
      * @param sqlType corresponding sql type of the value
-     * @param value the value of the expression
      * @return
      */
-    public AbstractFreeSqlBuilder notIn(String columnName, int sqlType, Collection<?> values) {
-        return append(Expressions.notIn(columnName, sqlType, values));
+    public AbstractFreeSqlBuilder notIn(String name, Collection<?> values, int sqlType) {
+        return append(Expressions.notIn(name, values, sqlType));
     }
     
     /**
      * Append IS NULL expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder isNull(String columnName) {
-        return append(Expressions.isNull(columnName));
+    public AbstractFreeSqlBuilder isNull(String name) {
+        return append(Expressions.isNull(name));
     }
     
     /**
      * Append IS NOT NULL expression using the giving name
-     * @param columnName  column name, can not be expression.
+     * 
+     * @param name column name, can not be expression.
      * @return
      */
-    public AbstractFreeSqlBuilder isNotNull(String columnName) {
-        return append(Expressions.isNotNull(columnName));
+    public AbstractFreeSqlBuilder isNotNull(String name) {
+        return append(Expressions.isNotNull(name));
     }
     
     public static class Text extends Clause {
@@ -880,14 +1021,14 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
 
     public static class Column extends Clause {
-        private String columnName;
+        private String name;
         private String alias;
-        public Column(String columnName) {
-            this.columnName = columnName;
+        public Column(String name) {
+            this.name = name;
         }
         
-        public Column(String columnName, String alias) {
-            this(columnName);
+        public Column(String name, String alias) {
+            this(name);
             this.alias = alias;
         }
         
@@ -897,7 +1038,7 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
         }
         
         public String build() {
-            return alias == null ? wrapField(getDbCategory(), columnName): wrapField(getDbCategory(), columnName) + " AS " + alias;
+            return alias == null ? wrapField(getDbCategory(), name): wrapField(getDbCategory(), name) + " AS " + alias;
         }
     }
     

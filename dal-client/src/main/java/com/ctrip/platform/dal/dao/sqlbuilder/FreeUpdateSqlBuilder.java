@@ -3,7 +3,15 @@ package com.ctrip.platform.dal.dao.sqlbuilder;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 
 /**
- * The free sql build for update statement.
+ * A very flexible SQL builder that can build complete SQL alone with parameters for update purpose.
+ * It allows user add nullable or conditional expressions. The null expression 
+ * may be auto removed during build process. And it will also remove needed operator and bracket
+ * to make the final sql correct. 
+ * 
+ * There are certain rules that you need to know about: 
+ * if bracket has no content, bracket will be removed
+ * expression can be evaluated and can be wrapped by bracket and connect to each other by and/or
+ * expression should have no leading and tailing and/or, it there is, the and/or will be removed during validating
  *  
  * @author jhhe
  */
@@ -15,9 +23,15 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
     public static final String UPDATE = "UPDATE";
     public static final String SET = "SET";
     
+    /**
+     * @deprecated you should use FreeUpdateSqlBuilder() instead
+     * @param dbCategory
+     */
 	public FreeUpdateSqlBuilder(DatabaseCategory dbCategory) {
 	    setDbCategory(dbCategory);
 	}
+	
+	public FreeUpdateSqlBuilder(){}
 
 	/**
 	 * If there is IN parameter, no matter how many values in the IN clause, the IN clause only need to 

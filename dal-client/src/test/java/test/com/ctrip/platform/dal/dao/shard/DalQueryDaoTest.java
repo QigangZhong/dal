@@ -340,7 +340,7 @@ public abstract class DalQueryDaoTest {
 	     inParam.add(3);
 	     inParam.add(4);
 	     
-	     builder.setIn("type", Types.INTEGER, inParam);
+	     builder.setIn("type", inParam, Types.INTEGER);
 	     builder.setTemplate(sqlInParam);
 	     builder.mapWith(new ShortRowMapper());
 	     return dao.query(
@@ -361,7 +361,7 @@ public abstract class DalQueryDaoTest {
          inParam.add(3);
          inParam.add(4);
          
-         builder.selectAll().from(TABLE_NAME).where(in("type", Types.INTEGER, inParam));
+         builder.selectAll().from(TABLE_NAME).where(in("type", inParam, Types.INTEGER));
          builder.mapWith(new ShortRowMapper());
          return dao.query(
                  builder, parameters,

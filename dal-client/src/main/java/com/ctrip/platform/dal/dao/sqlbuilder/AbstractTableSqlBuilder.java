@@ -474,7 +474,7 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @return
      * @throws SQLException
      */
-    public AbstractTableSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType) throws SQLException {
+    public AbstractTableSqlBuilder like(String field, String paramValue, MatchPattern pattern, int sqlType) throws SQLException {
         return like(field, paramValue, pattern, sqlType, DEFAULT_SENSITIVE);
     }
     
@@ -493,8 +493,8 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
      * @return
      * @throws SQLException
      */
-    public AbstractTableSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) throws SQLException {
-        return addParam(Expressions.like(field), process(paramValue, pattern), sqlType, sensitive);
+    public AbstractTableSqlBuilder like(String field, String paramValue, MatchPattern pattern, int sqlType, boolean sensitive) throws SQLException {
+        return addParam(Expressions.like(field), pattern.process(paramValue), sqlType, sensitive);
     }
     
     /**
@@ -687,13 +687,13 @@ public abstract class AbstractTableSqlBuilder extends AbstractSqlBuilder impleme
 	    String valueStr = value instanceof String ? (String)value : value.toString();
 	    
 	    switch (pattern) {
-            case head:
+            case END_WITH:
                 return "%" + valueStr;
-            case tail:
+            case BEGIN_WITH:
                 return valueStr + "%";
-            case both:
+            case CONTAINS:
                 return "%" + valueStr + "%";
-            case none:
+            case USER_DEFINED:
                 return valueStr;
             default:
                 throw new IllegalStateException("Not supported yet");

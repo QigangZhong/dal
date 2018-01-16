@@ -28,6 +28,12 @@ public class ClauseList extends Clause {
         return list;
     }
     
+    public ClauseList(){}
+            
+    public ClauseList(Clause... clauses) {
+        add(clauses);
+    }
+    
     public ClauseList add(Clause... clauses) {
         for(Clause c: clauses) {
             if(c instanceof ClauseList) {

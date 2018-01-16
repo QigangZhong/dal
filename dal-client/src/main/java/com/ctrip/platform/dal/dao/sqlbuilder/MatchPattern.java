@@ -17,8 +17,26 @@ package com.ctrip.platform.dal.dao.sqlbuilder;
  *
  */
 public enum MatchPattern {
-    head,
-    tail,
-    both,
-    none,
+    END_WITH,
+    BEGIN_WITH,
+    CONTAINS,
+    USER_DEFINED;
+    
+    public String process(String value) {
+        if(value == null)
+            return null;
+        
+        switch (this) {
+            case END_WITH:
+                return "%" + value;
+            case BEGIN_WITH:
+                return value + "%";
+            case CONTAINS:
+                return "%" + value + "%";
+            case USER_DEFINED:
+                return value;
+            default:
+                throw new IllegalStateException("Not supported yet");
+        }
+    }
 }

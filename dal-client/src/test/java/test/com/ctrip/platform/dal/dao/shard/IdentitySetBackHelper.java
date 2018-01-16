@@ -15,7 +15,7 @@ public class IdentitySetBackHelper {
     public static void clearId(List<ClientTestModel> entities) {
         int i = 0;
         for(ClientTestModel model: entities) {
-            model.setId(-1);
+            model.setId(null);
             model.setAddress("CTRIP" + i++);
         }
     }

@@ -18,7 +18,15 @@ import com.ctrip.platform.dal.dao.helper.DalSingleResultExtractor;
 import com.ctrip.platform.dal.dao.helper.DalSingleResultMerger;
 
 /**
- * A flexible sql builder for SELECT statement.
+ * A very flexible SQL builder that can build complete SQL alone with parameters for query purpose.
+ * It allows user add nullable or conditional expressions. The null expression 
+ * may be auto removed during build process. And it will also remove needed operator and bracket
+ * to make the final sql correct. 
+ * 
+ * There are certain rules that you need to know about: 
+ * if bracket has no content, bracket will be removed
+ * expression can be evaluated and can be wrapped by bracket and connect to each other by and/or
+ * expression should have no leading and tailing and/or, it there is, the and/or will be removed during validating
  * 
  * @author jhhe
  */
@@ -41,7 +49,7 @@ public class FreeSelectSqlBuilder<K> extends AbstractFreeSqlBuilder implements S
 
 	
 	/**
-	 * @Deprecated you should use FreeSelectSqlBuilder() instead
+	 * @deprecated you should use FreeSelectSqlBuilder() instead
 	 * @param dbCategory
 	 */
 	public FreeSelectSqlBuilder(DatabaseCategory dbCategory) {
