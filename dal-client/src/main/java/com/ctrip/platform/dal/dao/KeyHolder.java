@@ -4,13 +4,13 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.ctrip.platform.dal.dao.client.DalLogger;
 import com.ctrip.platform.dal.dao.helper.EntityManager;
 import com.ctrip.platform.dal.dao.task.DaoTask;
 import com.ctrip.platform.dal.dao.task.KeyHolderAwaredTask;
@@ -24,39 +24,42 @@ import com.ctrip.platform.dal.exceptions.ErrorCode;
  *
  */
 public class KeyHolder {
-    public final static String NOT_SET = "NOT SET!!!";
-	private boolean requireMerge = false;
-	private int totalSize;
+    public static final String NOT_SET = "NOT SET!!!";
+    
+	private volatile boolean requireMerge = false;
+	private AtomicInteger currentPos = new AtomicInteger();
 	private AtomicInteger remainSize = new AtomicInteger();
 
 	private final Map<Integer, Map<String, Object>> allKeys = new ConcurrentHashMap<>();
-	private final List<Map<String, Object>> keyList = new LinkedList<Map<String, Object>>();
 	
 	private AtomicBoolean merged = new AtomicBoolean(false);
 
+    private DalLogger logger;
+    
+	public KeyHolder() {
+	    logger = DalClientFactory.getDalLogger();
+	    currentPos.set(0);
+	}
+	
 	/**
      * For internal use. Initialize all generated keys 
 	 * @param size
 	 */
 	public void initialize(int size) {
-	    this.totalSize = size;
 		remainSize.set(size);
 		
-//        if(!(allKeys.isEmpty() && keyList.isEmpty()))
-//            throw new IllegalStateException("Reuse of KeyHolder detected!");
+		if(allKeys.size() > 0)
+		    logger.error("Reuse of KeyHolder detected!", new IllegalStateException("Reuse of KeyHolder detected!"));
+
 		allKeys.clear();
-		keyList.clear();
 		
         for(int i = 0; i < size; i++) {
             allKeys.put(i, createEmptyKeys());
         }
 	}
 	
-	// TODO need to optimize this. it is really confusing
 	public int size() {
-        if(totalSize != 0)
-            return totalSize;
-        return keyList.size();
+        return allKeys.size();
 	}
 	
 	/**
@@ -117,10 +120,10 @@ public class KeyHolder {
 	 */
 	public Map<String, Object> getKeys() throws SQLException {
 		if (size() != 1) {
-			throw new DalException(ErrorCode.ValidateKeyHolderSize, keyList);
+			throw new DalException(ErrorCode.ValidateKeyHolderSize, getKeyList());
 		}
 		
-		return this.keyList.get(0);
+        return allKeys.get(0);
 	}
 
 	/**
@@ -132,7 +135,13 @@ public class KeyHolder {
 		if(requireMerge && merged.get() == false)
 			throw new DalException(ErrorCode.KeyGenerationFailOrNotCompleted);
 
-		return this.keyList;
+		List<Map<String, Object>> keyList = new ArrayList<>();
+		
+		int size = size();
+		for(int i = 0; i < size; i++)
+		    keyList.add(allKeys.get(i));
+		
+		return keyList;
 	}
 	
 	/**
@@ -155,9 +164,6 @@ public class KeyHolder {
 	}
 	
 	private Number getId(Map<String, Object> key) throws DalException {
-		if(key.size() != 1)
-			throw new DalException(ErrorCode.ValidateKeyHolderFetchSize, key);
-		
 		return (Number)key.values().iterator().next();
 	}
 	
@@ -170,7 +176,9 @@ public class KeyHolder {
      * @param key
      */
     public void addKeys(List<Map<String, Object>> keys) {
-        keyList.addAll(keys);
+        int i = 0;
+        for(Map<String, Object> key: keys)
+            allKeys.put(i++, key);
     }
     
 	/**
@@ -178,7 +186,8 @@ public class KeyHolder {
 	 * @param key
 	 */
 	public void addKey(Map<String, Object> key) {
-		keyList.add(key);
+		allKeys.put(currentPos.get(), key);
+		currentPos.incrementAndGet();
 	}
 
 	public static DalHints prepareLocalHints(DaoTask<?> task, DalHints hints) {
@@ -217,7 +226,7 @@ public class KeyHolder {
      * @param key
      */
     private void singleFail() {
-        keyList.add(createEmptyKeys());
+        addKey(createEmptyKeys());
     }
     
     private Map<String, Object> createEmptyKeys() {
@@ -243,7 +252,7 @@ public class KeyHolder {
 	public void addPatial(Integer[] indexList, KeyHolder tmpHolder) {
 		int i = 0;
 		for(Integer index: indexList) {
-			allKeys.put(index, tmpHolder.keyList.get(i++));
+			allKeys.put(index, tmpHolder.allKeys.get(i++));
 		}
 		
 		// All partial is added, start merge generated keys
@@ -259,10 +268,10 @@ public class KeyHolder {
 		if(merged.get())
 			return;
 		
-		keyList.clear();
-		for(int i = 0; i < allKeys.size(); i++)
-			keyList.add(allKeys.get(i));
-		
+//		keyList.clear();
+//		for(int i = 0; i < allKeys.size(); i++)
+//			keyList.add(allKeys.get(i));
+//		
 		merged.set(true);
 	}
 	

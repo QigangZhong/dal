@@ -40,8 +40,22 @@ public class IdentitySetBackHelper {
     
     public static void assertIdentityWithError(DalTableDao<ClientTestModel> dao, List<ClientTestModel> entities) throws SQLException {
         for(ClientTestModel model: entities) {
-            if(model.getId() != null)
-                assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());    
+            if(model.getId() != null) {
+                assertEquals(dao.queryByPk(model, new DalHints()).getAddress(), model.getAddress());
+            }
+        }        
+    }
+    
+    public static void assertIdentityWithError(DalTableDao<ClientTestModel> dao, List<ClientTestModel> entities, int shardId) throws SQLException {
+        for(ClientTestModel model: entities) {
+            if(model.getId() != null) {
+                ClientTestModel m2 = dao.queryByPk(model, new DalHints().inShard(shardId));
+                if(m2 == null) {
+                    System.out.println("created id: " + model.getId());                    
+                }
+                
+                assertEquals(m2.getAddress(), model.getAddress());
+            }
         }        
     }
     

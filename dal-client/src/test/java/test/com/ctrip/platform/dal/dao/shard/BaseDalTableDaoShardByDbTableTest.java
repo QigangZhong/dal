@@ -1727,8 +1727,45 @@ public abstract class BaseDalTableDaoShardByDbTableTest {
 	        Assert.assertEquals(1+1, getCount(shardId, 0));
 	        Assert.assertEquals(0, getCount(shardId, 1));
 	        Assert.assertEquals(1+1, getCount(shardId, 2));
-	        IdentitySetBackHelper.assertIdentityWithError(dao, entities);
+	        IdentitySetBackHelper.assertIdentityWithError(dao, entities, shardId);
 		}
+	}
+	
+	@Test
+    public void testKeyHolderWithSetIdentityBack() throws SQLException{
+       if(!INSERT_PK_BACK_ALLOWED) return;
+       
+       int shardId = 0;
+       deleteAllShards(shardId);
+       DalHints hints = new DalHints().inShard(shardId);
+
+       List<ClientTestModel> entities = createListNoId(3);
+       entities.get(1).setAddress("CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+               + "CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+               + "CTRIPCTRIPCTRIPCTRIP");
+       
+       int[] res;
+
+       IdentitySetBackHelper.clearId(entities);
+       entities.get(0).setTableIndex(0);
+       entities.get(0).setDbIndex(0);
+
+       entities.get(1).setTableIndex(1);
+       entities.get(1).setDbIndex(1);
+       entities.get(1).setAddress("CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+               + "CTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIPCTRIP"
+               + "CTRIPCTRIPCTRIPCTRIP");
+       
+       entities.get(2).setTableIndex(2);
+       entities.get(2).setDbIndex(2);
+       hints = hints.setKeyHolder(new KeyHolder()).setIdentityBack();
+       res = dao.insert(hints.continueOnError(), entities);
+       res = assertIntArray(res, hints);
+       assertResEquals(2, res);
+       Assert.assertEquals(1, getCount(shardId, 0));
+       Assert.assertEquals(0, getCount(shardId, 1));
+       Assert.assertEquals(1, getCount(shardId, 2));
+       IdentitySetBackHelper.assertIdentityWithError(dao, entities);
 	}
 	
 	/**
