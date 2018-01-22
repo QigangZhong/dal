@@ -487,12 +487,12 @@ public class AbstractFreeSqlBuilderTest {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.select(template).from(template).where(AbstractFreeSqlBuilder.includeAll()).equal(template);
-        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE TRUE AND [template] = ?", test.build());
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE 1=1 AND [template] = ?", test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.select(template).from(template).where(AbstractFreeSqlBuilder.includeAll()).equal(template).nullable(null);
-        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE TRUE", test.build());
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE 1=1", test.build());
     }
     
     @Test
@@ -500,12 +500,12 @@ public class AbstractFreeSqlBuilderTest {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.select(template).from(template).where(AbstractFreeSqlBuilder.excludeAll()).equal(template);
-        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE FALSE OR [template] = ?", test.build());
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE 1<>1 OR [template] = ?", test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.setLogicDbName(logicDbName);
         test.select(template).from(template).where(AbstractFreeSqlBuilder.excludeAll()).equal(template).nullable(null);
-        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE FALSE", test.build());
+        assertEquals("SELECT [template] FROM [template] WITH (NOLOCK) WHERE 1<>1", test.build());
     }    
     
     @Test

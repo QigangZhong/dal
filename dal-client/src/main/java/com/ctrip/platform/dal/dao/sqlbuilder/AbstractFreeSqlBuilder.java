@@ -489,17 +489,17 @@ public class AbstractFreeSqlBuilder extends AbstractSqlBuilder {
     }
     
     /**
-     * @return TRUE AND
+     * @return "1=1" AND. To adapt to most batabase
      */
     public static Clause includeAll() {
-        return new ClauseList().add(Expressions.TRUE, Expressions.AND);
+        return new ClauseList().add(Expressions.expression("1=1"), Expressions.AND);
     }
     
     /**
-     * @return FALSE OR
+     * @return "1<>1" OR. To adapt to most batabase
      */
     public static Clause excludeAll() {
-        return new ClauseList().add(Expressions.FALSE, Expressions.OR);
+        return new ClauseList().add(Expressions.expression("1<>1"), Expressions.OR);
     }
     
     /**

@@ -11,7 +11,10 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -1530,6 +1533,85 @@ public abstract class BaseDalTableDaoShardByDbTableTest {
 		}
 	}
 
+    public void testMultipleHints(MultipleHintsTester tester) throws SQLException{
+        List<List<Map.Entry<DalHintEnum, Object>>> testHints = new ArrayList<>();
+                
+        for(Map<DalHintEnum, Object> hints: tester.getTestableHints()) {
+            List<Map.Entry<DalHintEnum, Object>> ll = new ArrayList<>();
+            for(Map.Entry<DalHintEnum, Object> e: hints.entrySet())
+                ll.add(e);
+            testHints.add(ll);
+        }
+
+        int[] curPos = new int[testHints.size()]; 
+        
+        // Append first one as null
+        for(List<Map.Entry<DalHintEnum, Object>> testHint: testHints)
+            testHint.add(0, null);
+        
+        while(curPos[0] < testHints.get(0).size()) {
+            DalHints hints = new DalHints();
+            
+            for (int i = 0; i < curPos.length; i++) {
+                Map.Entry<DalHintEnum, Object> testHint = testHints.get(i).get(curPos[i]);
+
+                if(testHint != null)
+                    hints.set(testHint.getKey(), testHint.getValue());
+            }
+            
+            // test callback
+            tester.test(hints);
+            
+            // refresh position
+            curPos[curPos.length - 1]++;
+            for(int j = curPos.length - 1; j>0; j--){
+                if(curPos[j] == testHints.get(j).size()) {
+                    curPos[j] = 0;
+                    curPos[j-1]++;
+                }
+            }
+        }
+    }
+    
+    private interface MultipleHintsTester {
+        List<Map<DalHintEnum, Object>> getTestableHints();
+        void test(DalHints hints) throws SQLException;
+    }
+
+    //TODO refine test
+    public void testInsertMultiple() throws SQLException{
+        testMultipleHints(new MultipleHintsTester(){
+            @Override
+            public List<Map<DalHintEnum, Object>> getTestableHints() {
+                List<Map<DalHintEnum, Object>> allHints = new ArrayList<>();
+                Map<DalHintEnum, Object> hints = new HashMap<>();
+                //Make first normal case
+                hints.put(DalHintEnum.userDefined1, null);
+                hints.put(DalHintEnum.asyncExecution, null);
+                hints.put(DalHintEnum.resultCallback, new IntCallback());
+                
+                allHints.add(hints);
+                
+                hints = new HashMap<>();
+                for(int i = 0; i < mod; i++) {
+                    hints.put(DalHintEnum.shard, i);
+                    hints.put(DalHintEnum.shardValue, i);
+                    Map<String, Object> shardColValues = new HashMap<String, Object>();
+                    shardColValues.put("dbIndex", i);
+                    hints.put(DalHintEnum.shardValue, shardColValues);
+                }
+                allHints.add(hints);
+                
+                return allHints;
+            }
+
+            @Override
+            public void test(DalHints hints) throws SQLException {
+                reset();
+                hints.continueOnError();
+            }
+        });
+    }
 	@Test
 	public void testInsertMultipleAsListWithContinueOnErrorHints() throws SQLException{
 		testInsertMultipleAsListWithContinueOnErrorHints(new DalHints());
