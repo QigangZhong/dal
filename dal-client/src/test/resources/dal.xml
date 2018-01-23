@@ -1,6 +1,6 @@
 <dal name="dal.prize.test">
   <databaseSets>
-    <databaseSet name="dao_test" provider="mysqlProvider">
+    <!--<databaseSet name="dao_test" provider="mysqlProvider">
       <add  name="dao_test_M" databaseType="Master" sharding="" connectionString="dao_test"/>
     </databaseSet>
     <databaseSet name="HA_Test_0" provider="mySqlProvider">
@@ -46,9 +46,9 @@
     <databaseSet name="dao_test_simple" provider="mySqlProvider" shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.SimpleShardHintStrategy;shardByDb=true" >
       <add  name="dao_test_sqlsvr_M" databaseType="Master" sharding="0" connectionString="dao_test_mysql_0"/>
       <add  name="dao_test_mysql_M" databaseType="Master" sharding="1" connectionString="dal_test_new"/>
-    </databaseSet> 
+    </databaseSet>
 	<databaseSet name="DAL_TEST" provider="sqlProvider">
-        <add name="DAL_TEST" databaseType="Master" sharding="" connectionString="dal_test_new"/>   
+        <add name="DAL_TEST" databaseType="Master" sharding="" connectionString="dal_test_new"/>
 	</databaseSet>
     <databaseSet name="dao_test_sqlsvr_tableShard" provider="sqlProvider" shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;tableColumns=index,tableIndex;tableMod=4;separator=_;shardedTables=dal_client_test" >
       <add  name="dao_test_sqlsvr_M" databaseType="Master" sharding="" connectionString="dao_test_sqlsvr"/>
@@ -83,27 +83,31 @@
       <add  name="dao_test_sqlsvr_dbShard_1" databaseType="Master" sharding="1" connectionString="SqlSvrShard_1"/>
     </databaseSet>
     <databaseSet name="dao_test_select" provider="mySqlProvider">
-        <add name="dao_test_select" databaseType="Master" sharding="" connectionString="dao_test"/>   
+        <add name="dao_test_select" databaseType="Master" sharding="" connectionString="dao_test"/>
 	</databaseSet>
     <databaseSet name="MySqlSimpleShard" provider="mySqlProvider"
          shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;columns=CountryID;mod=2;tableColumns=CityID;tableMod=4;separator=_;shardedTables=person">
-        <add name="dal_shard_0" databaseType="Master" sharding="0" connectionString="dal_shard_0"/>   
-        <add name="dal_shard_1" databaseType="Master" sharding="1" connectionString="dal_shard_1"/>   
+        <add name="dal_shard_0" databaseType="Master" sharding="0" connectionString="dal_shard_0"/>
+        <add name="dal_shard_1" databaseType="Master" sharding="1" connectionString="dal_shard_1"/>
     </databaseSet>
     <databaseSet name="dao_test_oracle" provider="oracleProvider" >
-        <add name="dao_test_oracle" databaseType="Master" sharding="" connectionString="OracleShard_0"/>   
+        <add name="dao_test_oracle" databaseType="Master" sharding="" connectionString="OracleShard_0"/>
     </databaseSet>
     <databaseSet name="dao_test_oracle_tableShard" provider="oracleprovider" shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;tableColumn=index,tableIndex;tableMod=4;separator=_;shardedTables=dal_client_test" >
-        <add name="dao_test_oracle" databaseType="Master" sharding="" connectionString="OracleShard_0"/>   
+        <add name="dao_test_oracle" databaseType="Master" sharding="" connectionString="OracleShard_0"/>
     </databaseSet>
     <databaseSet name="dao_test_oracle_dbShard" provider="oracleProvider" shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;columns=index,tableIndex;mod=2;">
-        <add name="dao_test_oracle_0" databaseType="Master" sharding="0" connectionString="OracleShard_0"/>   
-        <add name="dao_test_oracle_1" databaseType="Master" sharding="1" connectionString="OracleShard_1"/>   
+        <add name="dao_test_oracle_0" databaseType="Master" sharding="0" connectionString="OracleShard_0"/>
+        <add name="dao_test_oracle_1" databaseType="Master" sharding="1" connectionString="OracleShard_1"/>
     </databaseSet>
     <databaseSet name="dao_test_oracle_dbTableShard" provider="oracleprovider" shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;column=index,dbIndex;mod=2;tableColumn=table,tableIndex;tableMod=4;separator=_;shardedTables=dal_client_test">
-        <add name="dao_test_oracle_0" databaseType="Master" sharding="0" connectionString="OracleShard_0"/>   
-        <add name="dao_test_oracle_1" databaseType="Master" sharding="1" connectionString="OracleShard_1"/>   
-    </databaseSet>
+        <add name="dao_test_oracle_0" databaseType="Master" sharding="0" connectionString="OracleShard_0"/>
+        <add name="dao_test_oracle_1" databaseType="Master" sharding="1" connectionString="OracleShard_1"/>
+    </databaseSet>-->
+
+      <databaseSet name="NewRetailDB" provider="sqlProvider">
+          <add name="NewRetailDB" databaseType="Master" sharding="" connectionString="NewRetailDB"/>
+      </databaseSet>
   </databaseSets>
   <LogListener enabled="true">
   	  <logger>com.ctrip.platform.dal.dao.client.DefaultLogger</logger>

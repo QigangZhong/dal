@@ -1,6 +1,6 @@
 <Datasources location="$classpath">
 	<!-- 数据库连接池属性配置 -->
-    <Datasource name="ha_test"
+    <!--<Datasource name="ha_test"
               testWhileIdle="true"
               testOnBorrow="true"
               testOnReturn="false"
@@ -129,7 +129,7 @@
               minEvictableIdleTimeMillis="30000"
               defaultTransactionIsolation="SERIALIZABLE"
               connectionProperties="sendTimeAsDateTime=false;sendStringParametersAsUnicode=false;rewriteBatchedStatements=true;allowMultiQueries=true;useUnicode=true;characterEncoding=UTF-8"
-              /><!--  rewriteBatchedStatements=true;allowMultiQueries=true -->
+              />&lt;!&ndash;  rewriteBatchedStatements=true;allowMultiQueries=true &ndash;&gt;
     <Datasource name="dao_test_mysql_0"
               testWhileIdle="true"
               testOnBorrow="true"
@@ -148,7 +148,7 @@
               defaultTransactionIsolation="SERIALIZABLE"
               connectionProperties=""
               option=""
-              /><!--  rewriteBatchedStatements=true;allowMultiQueries=true -->
+              />&lt;!&ndash;  rewriteBatchedStatements=true;allowMultiQueries=true &ndash;&gt;
     <Datasource name="dao_test_mysql_1"
               testWhileIdle="true"
               testOnBorrow="true"
@@ -167,7 +167,7 @@
               defaultTransactionIsolation="SERIALIZABLE"
               connectionProperties=""
               option=""
-              /><!--  rewriteBatchedStatements=true;allowMultiQueries=true -->
+              />&lt;!&ndash;  rewriteBatchedStatements=true;allowMultiQueries=true &ndash;&gt;
        <Datasource name="dal_test_new"
               testWhileIdle="true"
               testOnBorrow="true"
@@ -331,7 +331,7 @@
               minEvictableIdleTimeMillis="30000"
               option="rewriteBatchedStatements=true;allowMultiQueries=true"
               connectionProperties="rewriteBatchedStatements=true;allowMultiQueries=true"/>
-    <!-- 	              
+    &lt;!&ndash;
 	<Datasource name="dao_test_1"
               testWhileIdle="true"
               testOnBorrow="true"
@@ -410,5 +410,26 @@
               removeAbandoned="true"
               logAbandoned="true"
               minEvictableIdleTimeMillis="30000"/>
-     -->
+     &ndash;&gt;-->
+    <Datasource name="NewRetailDB"
+                userName="ERP"
+                password="qiyang@2013"
+                connectionUrl="jdbc:sqlserver://192.168.60.105:1433;DatabaseName=NewRetailDB"
+                driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+                testWhileIdle="false"
+                testOnBorrow="false"
+                testOnReturn="false"
+                validationQuery="SELECT 1"
+                validationInterval="30000"
+                timeBetweenEvictionRunsMillis="5000"
+                maxActive="100"
+                minIdle="0"
+                maxWait="10000"
+                maxAge="30000"
+                initialSize="10"
+                removeAbandonedTimeout="60"
+                removeAbandoned="true"
+                logAbandoned="true"
+                minEvictableIdleTimeMillis="30000"
+                connectionProperties="sendTimeAsDateTime=false;sendStringParametersAsUnicode=false"/>
 </Datasources>
