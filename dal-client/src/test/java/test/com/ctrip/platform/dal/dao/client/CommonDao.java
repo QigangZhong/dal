@@ -8,6 +8,7 @@ import com.ctrip.platform.dal.dao.DalQueryDao;
 import com.ctrip.platform.dal.dao.DalTableDao;
 import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.helper.EntityManager;
+import org.junit.Test;
 import test.com.ctrip.platform.dal.dao.client.auto.DataSourceConfigDaoAuto;
 import test.com.ctrip.platform.dal.dao.client.entity.DataSourceConfigPojo;
 
@@ -25,10 +26,5 @@ public class CommonDao {
     public <T> List<T> query(String sql, StatementParameters parameters, DalHints hints, Class<T> clazz) throws SQLException {
         DalQueryDao dao = new DalQueryDao(EntityManager.getEntityManager(clazz).getDatabaseName());
         return dao.query(sql, parameters, hints, clazz);
-    }
-
-    public void getOne() throws SQLException {
-        DataSourceConfigDaoAuto auto=new DataSourceConfigDaoAuto();
-        DataSourceConfigPojo result = auto.getOne(1);
     }
 }

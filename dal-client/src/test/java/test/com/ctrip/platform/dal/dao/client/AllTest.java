@@ -6,14 +6,13 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-//	ConnectionActionTest.class,
-//	DalConnectionManagerTest.class,
-//	DalConnectionTest.class,
-//	DalTransactionManagerTest.class,
-//	DalTransactionTest.class,
-//	DalShardingHelperTest.class,
-//	DalConfigureFactoryTest.class,
-		CommonDao.class
+	ConnectionActionTest.class,
+	DalConnectionManagerTest.class,
+	DalConnectionTest.class,
+	DalTransactionManagerTest.class,
+	DalTransactionTest.class,
+	DalShardingHelperTest.class,
+	DalConfigureFactoryTest.class
 })
 public class AllTest {
 
