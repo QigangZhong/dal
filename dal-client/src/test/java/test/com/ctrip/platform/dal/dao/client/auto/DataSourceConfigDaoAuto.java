@@ -6,6 +6,7 @@ import com.ctrip.platform.dal.dao.*;
 import com.ctrip.platform.dal.dao.helper.DalDefaultJpaMapper;
 import com.ctrip.platform.dal.dao.helper.DalDefaultJpaParser;
 import com.ctrip.platform.dal.dao.sqlbuilder.FreeSelectSqlBuilder;
+import org.omg.CORBA.INTERNAL;
 import test.com.ctrip.platform.dal.dao.client.entity.DataSourceConfigPojo;
 
 import java.sql.SQLException;
@@ -80,5 +81,10 @@ public class DataSourceConfigDaoAuto {
         }else{
             return 0;
         }
+    }
+
+    public Integer update(DataSourceConfigPojo entity) throws SQLException {
+        Integer rowNum = updateDao.update(DalHints.createIfAbsent(null),entity);
+        return rowNum;
     }
 }
