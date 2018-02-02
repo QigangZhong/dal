@@ -23,6 +23,10 @@
         <spring-version>4.3.8.RELEASE</spring-version>
         <cglib-nodep-version>2.1_3</cglib-nodep-version>
         <file_encoding>UTF-8</file_encoding>
+
+        <!--benlai config-->
+        <newretail.maven.repo.url>http://nuget.benlailife.com:8004/maven2/NewRetail.maven</newretail.maven.repo.url>
+        <bdk.version>1.0.3</bdk.version>
     </properties>
     <dependencies>
         <dependency>
@@ -105,6 +109,11 @@
             <artifactId>easymockclassextension</artifactId>
             <version>${easymock-version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.benlai.bdk</groupId>
+            <artifactId>bdk-conf</artifactId>
+            <version>${bdk.version}</version>
         </dependency>
     </dependencies>
     <build>
@@ -193,7 +202,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <configuration>
-                    <encoding>${file_encoding}</encoding>
                 </configuration>
                 <executions>
                     <execution>
@@ -225,9 +233,14 @@
     </build>
     <distributionManagement>
         <repository>
-            <id>internal.repo</id>
-            <name>Temporary Staging Repository</name>
-            <url>file://${project.build.directory}/mvn-repo</url>
+            <id>releases</id>
+            <name>Nexus Release Repository</name>
+            <url>${newretail.maven.repo.url}</url>
         </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>${newretail.maven.repo.url}</url>
+        </snapshotRepository>
     </distributionManagement>
 </project>

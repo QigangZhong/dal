@@ -1,17 +1,20 @@
 package com.ctrip.platform.dal.dao;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.benlai.bdk.conf.ConfigManager;
+import com.ctrip.platform.dal.dao.client.*;
 import com.ctrip.platform.dal.dao.configure.DalConfigLoader;
+import com.ctrip.platform.dal.dao.configure.DatabaseSet;
+import com.ctrip.platform.dal.dao.datasource.DefaultDalConnectionLocator;
 import com.ctrip.platform.dal.dao.helper.ServiceLoaderHelper;
 
+import com.ctrip.platform.dal.dao.task.DefaultTaskFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ctrip.platform.dal.dao.client.DalDirectClient;
-import com.ctrip.platform.dal.dao.client.DalLogger;
-import com.ctrip.platform.dal.dao.client.DalWatcher;
-import com.ctrip.platform.dal.dao.client.LogEntry;
 import com.ctrip.platform.dal.dao.configure.DalConfigure;
 import com.ctrip.platform.dal.dao.configure.DalConfigureFactory;
 import com.ctrip.platform.dal.dao.status.DalStatusManager;
@@ -64,29 +67,29 @@ public class DalClientFactory {
                 return;
             }
 
-            DalConfigure config = null;
-            if (path == null) {
-                DalConfigLoader loader = ServiceLoaderHelper.getInstance(DalConfigLoader.class);
-                if (loader == null)
-                    config = DalConfigureFactory.load();
-                else
-                    config = loader.load();
-                logger.info("Successfully initialized Dal Java Client Factory");
-            } else {
-                config = DalConfigureFactory.load(path);
-                logger.info("Successfully initialized Dal Java Client Factory with " + path);
-            }
+            //废弃Dal.xml, 读取默认配置
+            DalConfigure config = initDefaultDalConfigure();
 
             DalWatcher.init();
             LogEntry.init();
-            DalRequestExecutor.init(
-                    config.getFacory().getProperty(DalRequestExecutor.MAX_POOL_SIZE),
-                    config.getFacory().getProperty(DalRequestExecutor.KEEP_ALIVE_TIME));
+            DalRequestExecutor.init(ConfigManager.getString(DalRequestExecutor.MAX_POOL_SIZE), ConfigManager.getString(DalRequestExecutor.KEEP_ALIVE_TIME));
             
             DalStatusManager.initialize(config);
 
             configureRef.set(config);
         }
+    }
+
+    private static DalConfigure initDefaultDalConfigure(){
+        //use default logger
+        DalLogger logger = new DefaultLogger();
+        //use default task factory
+        DalTaskFactory factory = new DefaultTaskFactory();
+        //use default connection locator
+        DalConnectionLocator locator = new DefaultDalConnectionLocator();
+        //by default, no connection locator needs to be setup, connection pool will be created the first time we execute a sql.
+        Map<String, DatabaseSet> databaseSets = new HashMap<>();
+        return new DalConfigure("dal.benlai.default", databaseSets, logger, locator, factory);
     }
 
     /**
