@@ -109,7 +109,7 @@
           <add name="NewRetailDB" databaseType="Master" sharding="" connectionString="NewRetailDB"/>
       </databaseSet>
   </databaseSets>
-  <LogListener enabled="true">
+  <!--<LogListener enabled="true">
   	  <logger>com.ctrip.platform.dal.dao.client.DefaultLogger</logger>
       <settings>
         <encrypt>false</encrypt>
@@ -134,5 +134,5 @@
       <settings>
 		 <maxPoolSize>100</maxPoolSize>
 	  </settings>
-  </TaskFactory>
+  </TaskFactory>-->
 </dal>
